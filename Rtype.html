@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Title of the document</title>
+<style type="text/css">
+ canvas#canvas 
+ {
+ 	border:silver 1px outset;
+ }
+ </style>
+</head>
+
+<body>
+
+<canvas id="canvas" width="800" height="500">No support for Canvas.... Sorry</canvas>
+
+<script type="text/javascript">
+var canvas  = document.getElementById('canvas');
+var context = canvas.getContext('2d');
+
+var Rtype = {
+	
+	x: 100,
+	y: 100,
+	
+	mouse: {
+		x: 0,
+		y: 0
+	},
+	
+	shots: [],
+	bombs: [],
+	particles:[],
+	explode: false,
+	
+	init: function() {
+        document.addEventListener('mousemove', function(evt){
+           Rtype.mouse = Rtype.getMousePos(canvas, evt);  
+        }, false);
+		
+	    document.addEventListener('click', function(evt){
+           for (var i = 0; i < 2; i++) {
+              var shot = Rtype.missile();
+              Rtype.shots.push(shot);
+           }        
+	    }, false);
+		
+	    document.addEventListener('mousewheel', function(evt){
+//	       for (var i = 0; i < 4; i++) {
+       	      var shot = Rtype.smartBomb();
+	          Rtype.bombs.push(shot);
+              //Rtype.updateParticles();
+              
+//	       }
+        }, false);
+		
+	    setInterval(function(){
+		    Rtype.updateShip();
+		    Rtype.updateMissiles();
+		    Rtype.updateBombs();
+            Rtype.drawShip();
+		    Rtype.renderMissiles();
+		    Rtype.renderBombs();  
+            
+	    }, 10);
+    },
+	
+    missile: function(){
+        return {            
+	    dx: 4, 
+            dy: 0,
+            x: Rtype.x,
+            y: Rtype.y,
+            life: 120,
+            lifeCtr: 0,
+            power: 1,
+            width: 2,
+            height: 2
+        };
+    },
+	
+    smartBomb: function () {
+        
+        for (var i=0;i<50;i++){
+            var particle = {
+                x: Rtype.x,
+                y: Rtype.y,  
+                dx: Math.random()*3,
+                dy: Math.random()*3,
+                life: 50,
+                lifeCtr: 0
+            };
+            
+            if (Math.random()<.5){
+               particle.dx*=-1;
+               particle.dy*=-1;
+            }
+            
+            this.particles.push(particle);
+        }
+        
+        return  {            
+            dx: 4, 
+            dy: 0,
+            x: Rtype.x,
+            y: Rtype.y,
+            life: 80,
+            lifeCtr: 0,
+            power: 5,
+            width: 5,
+            height: 2
+        };
+    },
+	
+    updateParticles: function(bomb) {
+        var particle={};
+        var particleLength=this.particles.length-1;
+        
+        for (var i=particleLength;i>=0;i--){
+            var remove =false;
+            particle = this.particles[i];
+            particle.x += particle.dx;
+            particle.y += particle.dy;
+            //particle.x += bomb.x;
+            //particle.y += bomb.y;
+            particle.lifeCtr++;
+             
+            if (particle.lifeCtr > particle.life){
+                this.particles.splice(i,1)
+                particle=null;                
+            } 
+        }
+    },	
+    
+    renderParticles: function(bomb, callback) {
+        var particle={};
+    
+        var particleLength = this.particles.length-1;
+        for (var i=particleLength;i>=0;i--){
+            particle=this.particles[i];
+//     
+            context.save(); //save current state in stack 
+            context.setTransform(1,0,0,1,0,0); // reset to identity
+            context.globalAlpha = 1;
+            //translate the canvas origin to the center of the player
+            context.translate(bomb.x,bomb.y);
+            context.strokeStyle = 'red';        
+            context.beginPath();        
+            //draw everything offset by 1/2. Zero Relative 1/2 is 15
+            context.moveTo(0,0); 
+            context.lineTo(1,1);        
+            context.stroke();
+            context.closePath();
+            context.restore(); //pop old state on to screen
+        }       
+        
+        callback = function() {
+           
+        }
+    },  
+
+    updateMissiles: function() {
+       var missile= {};
+       var missileLength = this.shots.length-1;
+	    for (var i=missileLength; i>=0; i--){
+	    
+	     missile = this.shots[i];
+             missile.x += missile.dx;
+             missile.y += missile.dy;
+             
+             missile.lifeCtr++;
+             if (missile.lifeCtr > missile.life){
+                this.shots.splice(i,1)
+                missile = null;
+             }
+          }
+    }, 
+
+    updateBombs: function() {
+       var bomb = {};
+       var particles = {};
+       var bombLength = this.bombs.length-1;
+        for (var i=bombLength; i>=0; i--){
+          particle = this.particles[i];
+          bomb = this.bombs[i];
+         // //console.log(bomb);
+          bomb.x += bomb.dx;
+          bomb.y += bomb.dy;
+
+          bomb.lifeCtr++;
+          
+          if (bomb.lifeCtr > bomb.life){
+               this.updateParticles(bomb);
+               this.renderParticles(bomb, function(){});
+               this.bombs.splice(i,1);
+               bomb = null; 
+          }
+       }
+    }, 
+    
+    renderBombs: function() {
+        var bomb = {};
+        var bombLength = this.bombs.length-1;
+        
+        for (var i=bombLength; i>=0; i--){
+           bomb = this.bombs[i];
+           //this.missileContact(missile);
+           context.save(); 
+           context.setTransform(1,0,0,1,0,0); 
+           context.translate(bomb.x+1,bomb.y+1);
+           context.strokeStyle = 'orange';
+           context.globalAlpha = 1;
+           context.beginPath();
+           context.moveTo(-1,-1);
+           context.lineTo(1,-1);
+           context.lineTo(1,1);
+           context.lineTo(-1,1);
+           context.lineTo(-1,-1);
+           context.stroke();
+           context.closePath();
+           context.restore(); 
+         
+        }
+    },	
+   
+    renderMissiles: function() {
+        var missile = {};
+        var missileLength = this.shots.length-1;      
+        for (var i=missileLength; i>=0; i--){
+           missile = this.shots[i];
+           context.save(); 
+           context.setTransform(1,0,0,1,0,0); 
+           context.translate(missile.x+1,missile.y+1);
+           context.strokeStyle = 'red';
+           context.globalAlpha = 1;
+           context.beginPath();
+           context.moveTo(-1,-1);
+           context.lineTo(1,-1);
+           context.lineTo(1,1);
+           context.lineTo(-1,1);
+           context.lineTo(-1,-1);
+           context.stroke();
+           context.closePath();
+           context.restore(); 
+        }
+    },
+    updateShip: function() {
+	    this.x = this.mouse.x;
+	    this.y = this.mouse.y;
+    },
+	
+    drawShip: function() {
+	    context.clearRect(0, 0, canvas.width, canvas.height);        
+        context.save();
+	    context.rotate(this.rotation);
+        context.translate(this.x, this.y);
+	    context.globalAlpha = 1;
+        context.beginPath();
+        context.moveTo(10, 0);
+        context.lineTo(-10, 10);
+        context.lineTo(-5, 0);
+        context.lineTo(-10, -10);
+        context.lineTo(10, 0);
+        context.fillStyle = 'silver';
+        context.fill();
+        context.stroke();
+        context.closePath();
+        context.beginPath();
+        context.moveTo(-7.5, -5);
+        context.lineTo(-15, 0);
+        context.lineTo(-7.5, 5);
+        context.fillStyle = 'red';
+        context.fill();
+        context.stroke();
+        context.closePath();
+		context.restore();
+	},
+	
+    getMousePos:function (element, evt){
+        var obj = element, top = 0, left = 0;
+            
+        while (obj.tagName != 'BODY') {
+            top += obj.offsetTop;
+            left += obj.offsetLeft;
+            obj = obj.offsetParent;
+        }
+        
+        var mouseX = evt.clientX - left + window.pageXOffset;
+        var mouseY = evt.clientY - top  + window.pageYOffset;
+        
+        return { x: mouseX, y: mouseY };
+    }
+};
+
+window.onload = function() {
+    Rtype.init();
+   
+   
+}
+	
+</script>
+</body>
+
+</html>

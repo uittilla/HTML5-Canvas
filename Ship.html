@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Title of the document</title>
+<style type="text/css">
+ canvas#canvas 
+ {
+ 	border:silver 1px outset;
+ }
+ </style>
+</head>
+
+<body>
+
+<ul>
+  <li>Up arrow (thrust) </li>
+  <li>Left arrow (turn left) </li>
+  <li>Right arrow (turn right) </li>
+  <li>Space bar (fire) </li>
+  <li>left control (sheild) </li> 
+</ul>
+
+<canvas id="canvas" width="800" height="500">No support for Canvas.... Sorry</canvas>
+
+<script type="text/javascript">
+// Keyname constants
+var keys = {
+      KEY_NAME_THRUSTER:"up",
+      KEY_NAME_LEFT:"left",
+      KEY_NAME_RIGHT:"right",
+      KEY_NAME_SPACE:"space",
+      KEY_TYPE_UP:"keyup",
+      KEY_TYPE_DOWN:"keydown",
+      KEY_NAME_CTRL:"control"
+};
+    
+var canvas  = document.getElementById('canvas');
+var context = canvas.getContext('2d');
+
+var Ship = {
+    x: 0, y: 0, vr: 0, vx: 0, vy: 0,
+    thrust: 0.03, _thrust: 0,
+    width: 25, height: 20,
+    rotation: 0,
+    thruster: false,
+    friction: 0.97,
+    shipFillColor: "#0000ff",
+    flameStrokeColor: "#ff0000",
+    shots: [],
+    particles:[],
+    score: 0,
+    lives: 3,
+    sheild: false,
+
+    init: function() {
+        var that = this;
+        this.x = canvas.width / 2;
+        this.y = canvas.height / 2;
+
+        document.addEventListener('keydown', function (event) {
+           that.keyEvent(event);
+        }, false);
+
+        document.addEventListener('keyup', function () {
+            that.keyEvent(event);           
+        }, false);
+    },
+    
+    updateShip: function() {
+        this.rotation += this.vr * Math.PI / 180;
+        var ax = Math.cos(this.rotation) * this._thrust,
+            ay = Math.sin(this.rotation) * this._thrust,
+            left = 0, right = canvas.width,
+            top = 0, bottom = canvas.height;
+        
+        this.vx += ax;
+        this.vy += ay;
+        
+        if (this.x - this.width / 2 > right) { this.x = left - this.width / 2; }
+        else if (this.x + this.width / 2 < left) { this.x = right + this.width / 2; }
+        this.x += this.vx;
+        if (this.y - this.height / 2 > bottom) { this.y = top - this.height / 2; }
+        else if (this.y < top - this.height / 2) { this.y = bottom + this.height / 2; }
+        this.y += this.vy;      
+    },
+       
+    updateMissiles: function() {
+       var missile= {};
+       var missileLength = this.shots.length-1;
+       var left = 0, right = canvas.width, top = 0, bottom = canvas.height;
+       for (var i=missileLength; i>=0; i--){
+          missile = this.shots[i];
+          missile.x += missile.dx;
+          missile.y += missile.dy;
+        
+          if (missile.x > canvas.width) { missile.x =- missile.width; }
+          else if (missile.x<-missile.width){ missile.x = canvas.width; }
+          if (missile.y > canvas.height) { missile.y =- missile.height; }
+          else if (missile.y<-missile.height){ missile.y = canvas.height; }
+        
+          missile.lifeCtr++;
+          if (missile.lifeCtr > missile.life){
+             this.shots.splice(i,1)
+             missile = null;
+          }
+       }
+    },
+    
+    renderMissiles: function() {
+        var missile = {};
+        var missileLength = this.shots.length-1;
+      
+        for (var i=missileLength; i>=0; i--){
+           missile = this.shots[i];
+           this.missileContact(missile);
+           context.save(); 
+           context.setTransform(1,0,0,1,0,0); 
+           context.translate(missile.x+1,missile.y+1);
+           context.strokeStyle = 'red';
+           context.globalAlpha = 1;
+           context.beginPath();
+           context.moveTo(-1,-1);
+           context.lineTo(1,-1);
+           context.lineTo(1,1);
+           context.lineTo(-1,1);
+           context.lineTo(-1,-1);
+           context.stroke();
+           context.closePath();
+           context.restore(); 
+        }
+    },
+
+    missileContact: function(missile) {
+       for(var j=0; j<Ball.balls.length; j++) {
+            var ball     = Ball.balls[j], 
+                dx       = (ball.x) - (missile.x),
+                dy       = (ball.y) - (missile.y),
+                dist     = Math.sqrt((dx * dx) + (dy * dy)),
+                min_dist = ball.radius + 4;
+            
+            if (dist < min_dist) {       
+               ball.explode = true;
+               ball.timeout = 20;
+            }
+
+           if(ball.explode) {
+               if(ball.timeout > 0) {
+                   this.explode(ball);  
+               } else {
+               	  this.score++;
+                  Ball.balls.splice(j,1);
+               }
+           }
+       }         
+    },
+
+    shipContact: function() {
+       for(var j=0; j<Ball.balls.length; j++) {
+            var ball     = Ball.balls[j], 
+                dx       = (ball.x) - (this.x),
+                dy       = (ball.y) - (this.y),
+                dist     = Math.sqrt((dx * dx) + (dy * dy)),
+                min_dist = ball.radius + 4;
+            
+            if(this.sheild) {
+               min_dist = ball.radius + 20; 
+               if (dist < min_dist) {
+                //console.log("Bounce");
+                var angle = Math.atan2(dy, dx),                     // radians (where the balls hit each other)
+                    tx = this.x + Math.cos(angle) * min_dist,       // trajectory x
+                    ty = this.y + Math.sin(angle) * min_dist,       // trajectory y
+                    ax = (tx - ball.x) * 1.5 * 0.5,                 // angle x
+                    ay = (ty - ball.y) * 1.5 * 0.5;                 // angle y
+
+                    ball.dx += ax;                                  // ballB direction + speed
+                    ball.dy += ay;
+              }
+            } else {
+                if (dist < min_dist) {
+                	////console.log("boom");
+                    if(!this.particles.length > 0) {
+                	  this.lives--;
+            	      return true;   
+                    }
+                }
+            }    
+       }
+       
+       return false;	
+    },
+
+    updateParticles: function() {
+        var particle={};
+        var particleLength=this.particles.length-1;
+        
+        for (var i=particleLength;i>=0;i--){
+            var remove =false;
+            
+            particle = this.particles[i];
+            particle.x += particle.dx;
+            particle.y += particle.dy;
+            
+            particle.lifeCtr++;
+            
+            if (particle.lifeCtr > particle.life){
+            	remove=true;
+            } else if ((particle.x > canvas.width) || (particle.x < 0) || (particle.y > canvas.height) || (particle.y < 0)){
+                remove=true;
+            }
+            
+            if (remove) {
+            	////console.log("removing");
+                this.particles.splice(i,1)
+                particle=null;
+            }
+        }
+    },
+    
+    renderParticles: function() {
+        var particle={};
+        var particleLength = this.particles.length-1;
+        
+        for (var i=particleLength;i>=0;i--){
+            particle=this.particles[i];
+            context.save(); //save current state in stack 
+            context.setTransform(1,0,0,1,0,0); // reset to identity
+            context.globalAlpha = 1;
+            //translate the canvas origin to the center of the player
+            context.translate(particle.x,particle.y);
+            context.strokeStyle = 'red';
+        
+            context.beginPath();
+        
+            //draw everything offset by 1/2. Zero Relative 1/2 is 15
+            context.moveTo(0,0); 
+            context.lineTo(1,1);
+        
+            context.stroke();
+            context.closePath();
+            context.restore(); //pop old state on to screen
+        }
+    },
+    
+    applySheild: function () {
+        //context.save();
+        //context.clearRect(0, 0,canvas.width, canvas.height);
+//        context.fillStyle='white';
+        //context.lineStyle = "rgba(0,0,0,0.5)";
+        context.globalAlpha = "0.001";
+        context.fillStyle = "rgba(0,0,0,0.5)";  
+        context.globalAlpha = "0.001";
+        context.beginPath();
+        context.arc(-1, -1, 20, 0, 2*Math.PI, true);    
+        context.stroke();
+        context.fill();
+        context.restore(); 
+    },
+
+    explode: function(ball) {
+       var radius = [5, 10, 15, 20, 25];
+       var nova   = ['orange', 'red', 'yellow', 'blue']; 
+ 
+       ball.radius   = radius[Math.floor(Math.random() * radius.length)];
+       ball.col      = nova[Math.floor(Math.random() * nova.length)];
+       ball.timeout -= 1;
+    },
+   
+    renderShip: function () {
+        context.clearRect(0, 0, canvas.width, canvas.height);        
+        context.save();
+        context.translate(this.x, this.y);
+        context.rotate(this.rotation);
+        context.lineWidth = 1;
+        
+        if(this.shipContact()) {
+            //alert("bang");
+            for (var i=0;i<100;i++){
+            	
+	            var particle = {
+	            	x: this.x,
+	            	y: this.y,  
+	            	dx: Math.random()*3,
+	            	dy: Math.random()*3,
+	            	life: 100,
+	            	lifeCtr: 0
+	            };
+	            
+	            if (Math.random()<.5){
+	               particle.dx*=-1;
+	               particle.dy*=-1;
+	            }
+	            
+	            this.particles.push(particle);
+	        }
+        }   	
+        
+        if(this.particles.length > 0) {
+            this.x  = (canvas.width / 2); 
+            this.y = (canvas.height / 2);
+            this.vx = 0; this.vy = 0;
+            this.dx = 0; this.dy = 0;
+        } else {
+	        var gradient = context.createLinearGradient(0, 0, 0, 10);
+		        gradient.addColorStop(0, "orange");
+		        gradient.addColorStop(1, "yellow");
+		        
+	        context.globalAlpha = 1;
+	        context.beginPath();
+	        context.moveTo(10, 0);
+	        context.lineTo(-10, 10);
+	        context.lineTo(-5, 0);
+	        context.lineTo(-10, -10);
+	        context.lineTo(10, 0);
+	        context.fillStyle = gradient;
+	        context.fill();
+	        context.stroke();
+	        context.closePath();
+	        
+	        if (this.thruster) {
+	            context.beginPath();
+	            context.moveTo(-7.5, -5);
+	            context.lineTo(-15, 0);
+	            context.lineTo(-7.5, 5);
+	            context.fillStyle = this.flameStrokeColor;
+	            context.fill();
+	            context.stroke();
+	            context.closePath();
+	        }
+           
+            if(this.sheild) {
+                this.applySheild();
+            }
+
+        }
+            
+        context.restore();
+    },  
+    
+    missile: function(){
+        var angle = this.rotation += (this.vr * Math.PI / 180);
+        return {
+            dx: 5 * Math.cos(angle), 
+            dy: 5 * Math.sin(angle),
+            x: Ship.x,
+            y: Ship.y,
+            life: 60,
+            lifeCtr: 0,
+            width: 2,
+            height: 2
+        };
+    },
+    
+    keyEvent: function(evt) {
+       var keyName = String.fromCharCode(evt.keyCode).toLowerCase();
+
+       ////console.log(evt.keyCode);
+
+       if (evt.keyCode == 37) { keyName = keys.KEY_NAME_LEFT; }     // Left arrow key
+       if (evt.keyCode == 39) { keyName = keys.KEY_NAME_RIGHT; }    // Right arrow key
+       if (evt.keyCode == 38) { keyName = keys.KEY_NAME_THRUSTER; } // Up arrow key
+       if (evt.keyCode == 32) { keyName = keys.KEY_NAME_SPACE; }    // space bar
+       if (evt.keyCode == 17) { keyName = keys.KEY_NAME_CTRL; }     // left control
+       this.move(evt.type, keyName);       
+   },
+   
+   move: function(keyType, keyName) {
+       // Thruster is off
+       if (keyName == keys.KEY_NAME_THRUSTER && keyType == keys.KEY_TYPE_UP) {
+           this.thruster = false;
+           this._thrust = 0;
+           this.vr = 0;
+       }
+       // Thruster on
+       else if(keyName == keys.KEY_NAME_THRUSTER && keyType == keys.KEY_TYPE_DOWN) {
+           this.thruster = true;
+           this._thrust = this.thrust;
+       }
+       // Turning left
+       if (keyName == keys.KEY_NAME_LEFT && keyType == keys.KEY_TYPE_DOWN) {
+           this.vr = -4;
+       }
+       // Turning right
+       if (keyName == keys.KEY_NAME_RIGHT && keyType == keys.KEY_TYPE_DOWN) {
+           this.vr = 4;
+       }
+       // Stop turning
+       if ((keyName == keys.KEY_NAME_RIGHT || keyName == keys.KEY_NAME_LEFT ) && keyType == keys.KEY_TYPE_UP) {
+           this.vr = 0;
+       }  
+       // update here to allow thrusting turning and firing
+       if (keyName == keys.KEY_NAME_SPACE && keyType == keys.KEY_TYPE_DOWN) {
+          var shot = this.missile();
+          this.shots.push(shot);
+       } 
+       else if(keyName == keys.KEY_NAME_SPACE && keyType == keys.KEY_TYPE_UP) {
+          
+       }  
+
+       if(keyName == keys.KEY_NAME_CTRL && keyType == keys.KEY_TYPE_DOWN) { 
+          this.sheild = true;
+       } 
+
+       if(keyName == keys.KEY_NAME_CTRL && keyType == keys.KEY_TYPE_UP) { 
+          this.sheild = false;
+       }       
+
+   }
+};
+
+var Ball = {
+    colours: ['red','green','yellow','black','silver','orange','pink'],
+    numBalls:0,
+    laws: { 
+         bounce: -0.5,
+         spring: 1.5,
+         gravity: 0.1
+    },
+    center: { 
+         x: null, 
+         y: null
+    },
+    balls: [],
+    numBalls: 5,
+    round:1,
+    
+    init: function () {
+        for(i= 0 ; i < this.numBalls; i++){
+           var ball = this.ball();
+           this.balls.push( ball );
+        }       
+                
+        document.addEventListener('mousemove', function(evt){
+           Ball.mouse = Ball.getMousePos(canvas, evt);  
+        }, false);
+
+    },
+
+    ball: function() {
+        var rad = Math.floor(Math.random()*(10 -5 + 1)) + 5;
+        return {
+            radius: rad,
+            x:      Math.floor(Math.random()*(canvas.width - rad + 1)) + rad,
+            y:      Math.floor(Math.random()*(canvas.height - rad + 1)) + rad,
+            dx:     Math.floor(Math.random() * 2) * 2 - 1,
+            dy:     Math.floor(Math.random() * 2) * 2 - 1,
+            col:    this.colours[Math.floor(Math.random() * this.colours.length)],
+            id:     0,
+            hits:   0  
+        };      
+    },
+    
+    addBall: function() {
+        var ball = this.ball();   
+        //ball.x = this.mouse.x;
+        //ball.y = this.mouse.y;
+        this.balls.push(ball);
+    },
+
+    updateShip: function() {
+        Ship.updateShip();
+        Ship.updateMissiles();
+        Ship.updateParticles()
+        Ship.renderShip();
+        Ship.renderMissiles();
+        Ship.renderParticles();   
+    },
+    
+    showStatus: function() {
+       context.globalAlpha = 1;
+       context.strokeStyle="black";
+       context.strokeText("Score: " + Ship.score, 10, 10);                        
+       context.stroke();
+       context.strokeText("Lives: " + Ship.lives, 60, 10);                        
+       context.stroke();
+       context.strokeText("Level: " + this.round, 120, 10);                        
+       context.stroke();    
+    },
+    draw: function() {
+        context.save();
+        context.clearRect(0, 0,canvas.width, canvas.height);
+
+        if(Ship.lives == 0) {
+            context.globalAlpha = 1;
+            context.font = "40pt Calibri";
+        	context.strokeText("GAME OVER", canvas.width/2 - 150, canvas.height/2);                        
+            context.stroke();            
+        } else {
+
+            this.updateShip();
+
+            context.globalAlpha = 0.25;
+            context.strokeStyle="black";           
+            
+            this.showStatus();        
+            
+            var numBalls = this.balls.length-1;                   
+
+            if(numBalls < 0) {
+            	this.round++;
+            	this.numBalls += this.round + 1;
+            	for(var i=0; i<this.numBalls; i++) { this.addBall(); }	
+            }
+        
+            for(i = numBalls; i >= 0; i--){
+                var ball = this.balls[i];
+                  
+                ball.id = (ball.id == 0) ? i : ball.id; 
+                                
+                this.checkCollision(ball, i);                                   
+                context.fillStyle=ball.col;
+                context.beginPath();
+                context.arc(ball.x, ball.y, ball.radius, 0, 2*Math.PI, true);           
+                //context.strokeText(ball.id, ball.x, ball.y+3);                        
+                context.stroke();
+                context.fill();
+                    
+                if(ball.x <= ball.radius || ball.x >= (canvas.width-ball.radius)){ 
+                   ball.dx *= -1;                                                    
+                }
+                if(ball.y<=ball.radius || ball.y >= (canvas.height-ball.radius)){
+                   ball.dy *= -1;
+                }
+                                                           
+                ball.x += ball.dx;                                              
+                ball.y += ball.dy;
+            }  
+        }
+        context.restore();
+    },
+    
+    checkCollision: function (ballA, i) {
+         for (var j = 0; j < this.balls.length; j++) {
+            if( j != i ){
+                var ballB    = this.balls[j],
+                    dx       = (ballB.x) - (ballA.x),
+                    dy       = (ballB.y) - (ballA.y),
+                    dist     = Math.sqrt((dx * dx) + (dy * dy)),
+                    min_dist = ballA.radius + ballB.radius;
+                                          
+                if (dist < min_dist) {                               // center hit not outside edge (refine)
+                    var angle = Math.atan2(dy, dx),                  // radians (where the balls hit each other)
+                    tx = ballA.x + Math.cos(angle) * min_dist,       // trajectory x
+                    ty = ballA.y + Math.sin(angle) * min_dist,       // trajectory y
+                    ax = (tx - ballB.x) * this.laws.spring * 0.5,    // angle x
+                    ay = (ty - ballB.y) * this.laws.spring * 0.5;    // angle y
+                    ballA.dx -= ax;                                  // ballA direction + speed
+                    ballA.dy -= ay;
+                    ballB.dx += ax;                                  // ballB direction + speed
+                    ballB.dy += ay;
+                }
+            }
+         }
+    },
+
+    getMousePos:function (element, evt){
+        var obj = element, top = 0, left = 0;
+            
+        while (obj.tagName != 'BODY') {
+            top += obj.offsetTop;
+            left += obj.offsetLeft;
+            obj = obj.offsetParent;
+        }
+        
+        var mouseX = evt.clientX - left + window.pageXOffset;
+        var mouseY = evt.clientY - top  + window.pageYOffset;
+        
+        return { x: mouseX, y: mouseY };
+    }
+
+};
+
+window.onload = function() {
+    Ship.init();
+    Ball.init();
+    
+    setInterval(function(){
+   	   Ball.draw();
+   	}, 10);     
+}
+	
+</script>
+</body>
+
+</html>

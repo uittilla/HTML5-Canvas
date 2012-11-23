@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Title of the document</title>
+<style type="text/css">
+ canvas#primaryCanvas 
+ {
+ 	border:red 1px solid;
+ }
+ </style>
+</head>
+
+<body>
+<canvas id="canvas" width="600" height="400" style="border:1px inset red" onclick="ANIMATE.main.addball()">
+No support for Canvas.... Sorry
+</canvas>
+<br />
+<textarea rows = 20 cols = 100 id="textDebug">
+</textarea>
+
+<script type="text/javascript">
+var ANIMATE = ANIMATE || {};
+
+
+var Object = {
+    create: function (o) {
+        function F() {}
+        F.prototype = o;
+        return new F();
+    }
+};
+
+
+ANIMATE.Vector2D = {
+
+   x:0,
+   y:0,
+   
+   init: function(x,y) {
+      this.x = x;
+      this.y = y;
+      
+      return this;
+   }, 
+   
+   add: function(addVector) {
+        this.x = this.x + addVector.x;
+        this.y = this.y + addVector.y;            
+   },
+   
+   addNew: function(addVector) {
+        return Object.create(ANIMATE.Vector2D).init(this.x + addVector.x, this.y + addVector.y);
+   },
+
+   subtract: function(subtractVector) {
+        this.x = this.x - subtractVector.x;
+        this.y = this.y - subtractVector.y;
+   },
+
+   subtractNew: function(subtractVector) {
+        return Object.create(ANIMATE.Vector2D).init(this.x - subtractVector.x, this.y - subtractVector.y);
+   },
+
+   dot: function(dotVector) {
+        return (this.x * dotVector.x) + (this.y * dotVector.y);
+   },
+
+   normalise: function() {
+        var magnitude = this.magnitude();
+        this.x = this.x / magnitude;
+        this.y = this.y / magnitude;
+   },
+
+   magnitude: function() {
+   	    var x = this.x * this.x; //Math.pow(this.x,2),
+		    y = this.y * this.y; //Math.pow(this.y,2),
+			z = x + y;
+		  // Using:
+          // f(x) = x*x - Input.value
+          // f'(x) = 2*x
+          // Assumes convergence in 10 iterations
+          var X = 1;
+          for (var i = 0; i < 8; i++)
+          X = X - ((X*X - z) / (2*X));
+          z = X;
+   
+          return z;
+          //return Math.sqrt(z);
+   },
+
+   copy: function() {
+        return Object.create(ANIMATE.Vector2D).init(this.x,this.y);
+   },
+
+   scalarMultiply: function(scalar) {
+        this.x = this.x * scalar;
+        this.y = this.y * scalar;
+   },
+
+   scalarMultiplyNew: function(scalar) {
+        return Object.create(ANIMATE.Vector2D).init(this.x * scalar, this.y * scalar);
+   },
+   
+   scalarDivide: function(scalar) {
+        this.x = this.x / scalar;
+        this.y = this.y / scalar;
+   },
+   
+   rotate: function(pivot, radianAngle){
+        var c = Math.cos(radianAngle);
+        var s = Math.sin(radianAngle);
+        this.x -= pivot.x;
+        this.y -= pivot.y;
+        var x = this.x * c - this.y * s;
+        var y = this.x * s + this.y * c;
+        this.x = x + pivot.x;
+        this.y = y + pivot.y;
+   }    
+};
+
+ANIMATE.Triangle = {
+	A: null,
+	B: null,
+	C: null,
+	x: null,
+	y: null,
+	colour: null,
+	angle: null,
+	
+	init: function (coords) {
+        this.A = Object.create(ANIMATE.Vector2D).init(coords.a.x, coords.a.y);
+        this.B = Object.create(ANIMATE.Vector2D).init(coords.b.x, coords.b.y);
+        this.C = Object.create(ANIMATE.Vector2D).init(coords.c.x, coords.c.y);
+        this.colour = "#000000";
+		
+		return this;
+    },    
+    
+	rotate: function(radianAngle) {
+        var centre = Object.create(ANIMATE.Vector2D).init(this.A.x, this.A.y);
+        centre.add(this.B);
+        centre.add(this.C);
+        centre.scalarDivide(3);
+        this.A.rotate(centre, radianAngle);
+        this.B.rotate(centre, radianAngle);
+        this.C.rotate(centre, radianAngle);
+    },
+	
+    redraw: function(context) {
+        context.beginPath();
+        context.moveTo(this.A.x,this.A.y);
+        context.strokeText("A", this.A.x, this.A.y);
+		context.lineTo(this.B.x, this.B.y);
+		context.strokeText("B", this.B.x, this.B.y);
+        context.lineTo(this.C.x, this.C.y);
+		context.strokeText("C", this.C.x, this.C.y);
+        context.lineTo(this.A.x, this.A.y);
+        context.strokeStyle = this.colour;
+        context.stroke();
+    },
+      
+	checkBallCollision: function(ball) {
+        this.checkBall(this.A, this.B, ball);
+        this.checkBall(this.B, this.C, ball);
+        this.checkBall(this.C, this.A, ball);
+    },
+	
+    checkBall: function (a,b,ball) {
+        var AB = Object.create(ANIMATE.Vector2D).init(b.x - a.x, b.y - a.y);
+        var AX = Object.create(ANIMATE.Vector2D).init(ball.position.x - a.x, ball.position.y - a.y);
+        var u = ((AX.x * AB.x) + (AX.y * AB.y)) / Math.pow(AB.magnitude(), 2);
+        
+	if (u >= 0 && u <= 1) {
+		var P = Object.create(ANIMATE.Vector2D).init(a.x, a.y);
+		P.add(AB.scalarMultiplyNew(u));
+		var XP = P.subtractNew(ball.position);
+		var N = Object.create(ANIMATE.Vector2D).init(AB.y, -AB.x);
+	
+		N.normalise();
+	
+		if (XP.magnitude() <= ball.radius) {
+			var NV = N.dot(ball.velocity);
+			var NV2 = N.scalarMultiplyNew(NV * 2);
+			ball.velocity.subtract(NV2);
+		}
+	
+		var danger = (ball.radius * 5);
+	
+		if (XP.magnitude() <= danger) {			
+			this.context.beginPath();
+			this.context.moveTo(P.x, P.y);
+			this.context.lineTo(P.x + (25*N.x), P.y + (25*N.y));
+			this.context.globalAlpha = 1.25;
+			this.context.strokeStyle = "red";
+			this.context.stroke();
+			this.context.beginPath();
+			this.context.arc(P.x, P.y, 4, 0, Math.PI * 2, true);
+			this.context.closePath();
+			this.context.strokeStyle = "red";
+			this.context.stroke();
+		}
+	}
+    }  
+};
+
+ANIMATE.Ball = {
+    position: 0,
+    velocity: 0,
+    moveVector: 0,
+    radius: 0,
+    mass: 0,
+    colour: "",
+    id: 0,
+
+    init: function(ball) { 
+        
+        this.position   = Object.create(ANIMATE.Vector2D).init(ball.pos.x,ball.pos.y);
+        this.velocity   = Object.create(ANIMATE.Vector2D).init(ball.vel.x, ball.vel.y);
+        this.moveVector = Object.create(ANIMATE.Vector2D).init(0, 0); 
+        this.radius     = ball.rad;
+        this.mass       = ball.mass;
+        this.colour     = ball.col;  
+        this.id         = ball.id;
+		
+        return this;
+        
+    },
+
+    redraw: function(context) { 
+        context.globalAlpha = 0.25;
+        context.strokeStyle="black";       
+        context.fillStyle   = this.colour;
+        context.beginPath();
+        context.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2, true);
+	//context.strokeText(this.id, this.position.x, this.position.y);                            // number our ball
+        //context.stroke();
+	context.fill();
+	context.closePath();
+    },
+
+    move: function() {
+        this.position.x = this.position.x + (this.moveVector.x);
+        this.position.y = this.position.y + (this.moveVector.y);
+    },
+
+    checkCollision: function(otherBall) {
+        var separationVector = otherBall.position.subtractNew(this.position);
+        var distance = separationVector.magnitude();
+        var sumRadii = (this.radius + otherBall.radius);
+        var moveVector = this.moveVector.subtractNew(otherBall.moveVector);
+        
+        distance -= sumRadii;
+        
+        if (moveVector.magnitude() < distance) {
+            return false;
+        }
+        
+        // Normalize the movevec
+        var N = moveVector.copy();
+        N.normalise();
+        
+        // D = N . C = ||C|| * cos(angle between N and C)
+        var D = N.dot(separationVector);
+
+        // Another early escape: Make sure that A is moving 
+        // towards B! If the dot product between the movevec and 
+        // B.center - A.center is less that or equal to 0, 
+        // A isn't isn't moving towards B
+        if (D <= 0) {
+            return false;
+        }
+
+        var F = (distance * distance) - (D * D);
+
+        // Escape test: if the closest that A will get to B 
+        // is more than the sum of their radii, there's no 
+        // way they are going collide
+        var sumRadiiSquared = sumRadii * sumRadii;
+        if (F >= sumRadiiSquared) {
+            return false;
+        }
+
+        // We now have F and sumRadii, two sides of a right triangle. 
+        // Use these to find the third side, sqrt(T)
+        var T = sumRadiiSquared - F;
+
+        // If there is no such right triangle with sides length of 
+        // sumRadii and sqrt(f), T will probably be less than 0. 
+        // Better to check now than perform a square root of a 
+        // negative number.
+        if (T < 0) {
+            return false;
+        }
+
+        // Therefore the distance the circle has to travel along 
+        // movevec is D - sqrt(T)
+		// Using:
+        // f(x) = x*x - Input.value
+        // f'(x) = 2*x
+        // Assumes convergence in 10 iterations
+        var X = 1;
+        for (var i = 0; i < 5; i++)
+         X = X - ((X*X - T) / (2*X));
+       
+        T = X;
+        var distance = D - T; //Math.sqrt(T);
+
+        // Get the magnitude of the movement vector
+        var mag = moveVector.magnitude()
+
+        // Finally, make sure that the distance A has to move 
+        // to touch B is not greater than the magnitude of the 
+        // movement vector.
+        if (mag < distance) {
+            return false;
+        }
+        
+        moveVector.normalise();
+        moveVector.scalarMultiply(distance);
+
+        var ratio = moveVector.magnitude() / mag;
+        moveVector.scalarMultiply(ratio);
+        otherBall.moveVector.scalarMultiply(ratio);
+        
+        return true;
+    }
+};
+
+
+
+ANIMATE.main = {
+    canvas: null,
+    context: null, 
+    debug: document.getElementById("textDebug"),
+    balls: [],
+    mouse: 0,
+    triangle: null,
+	
+    // avoid creation of two many vecor objects using Object.create
+    init: function() {
+        
+        var that = this;
+        
+        this.canvas  = document.getElementById("canvas");
+        this.context = this.canvas.getContext("2d"); 
+        
+        var numballs = 40;
+        
+        do {
+            var ball = this.ball();
+            ball.id  = numballs;
+	    var ballObj = Object.create(ANIMATE.Ball).init(ball);
+            this.balls.push(ballObj);
+        } while(--numballs); 
+
+        var Tcoords = {
+			a: { x:220, y:180 },
+			b: { x:260, y:140 },
+			c: { x:280, y:180 }
+		}
+
+        this.triangle = Object.create(ANIMATE.Triangle).init(Tcoords);
+						
+		this.triangle.context = this.context;
+        this.triangle.debug = true;
+		
+        document.addEventListener('keydown', function(evt) {
+           that.keyPress(evt, that.triangle);
+
+        },false);
+		
+        document.addEventListener('mousemove', function(evt){
+           that.mouse = that.getMousePos(that.canvas, evt); 
+        }, false);
+        
+        setInterval("ANIMATE.main.update()", 10);
+        
+    },
+    
+	// random ball properties    
+    ball: function() {
+       var rad = Math.floor(Math.random()*(10 -5 + 1)) + 5;
+       var colours = ['red','green','yellow','black','silver','orange','pink'];
+       
+       return {
+           pos: { 
+             x:  Math.floor(Math.random()*(this.canvas.width - rad + 1)) + rad,
+             y:  Math.floor(Math.random()*(this.canvas.width - rad + 1)) + rad
+           },           
+           vel: {
+             x:  Math.floor(Math.random() * (50 - rad + 1)) + rad,
+             y:  Math.floor(Math.random() * (50 - rad + 1)) + rad
+           },           
+           rad: rad,
+           mass: Math.floor(Math.random() * (10 - 5 + 1)) + 5,
+           col: colours[Math.floor(Math.random() * colours.length)]
+       };   
+    },
+    
+    getMousePos:function (element, evt){
+        // get canvas position
+        var obj = element, 
+            top = 0,
+            left = 0;
+            
+        while (obj.tagName != 'BODY') {
+            top += obj.offsetTop;
+            left += obj.offsetLeft;
+            obj = obj.offsetParent;
+        }
+        
+        // return relative mouse position
+        var mouseX = evt.clientX - left + window.pageXOffset;
+        var mouseY = evt.clientY - top + window.pageYOffset;
+        
+        return { x: mouseX, y: mouseY };
+    },
+
+    debugText: function (text) {
+        debug.innerHTML = text +"\r\n"+ debug.innerHTML;
+    },
+    
+    
+    addball: function() {
+        var ball = this.ball();
+            ball.id  = this.balls.length + 1;
+            ball.pos.x = this.mouse.x;
+            ball.pos.y = this.mouse.y;
+        var ballObj = Object.create(ANIMATE.Ball).init(ball);
+        this.balls.push(ballObj);
+        
+    },
+    
+    update: function() {
+        
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.triangle.redraw(this.context);
+
+        var ballLength = this.balls.length;
+
+        for (var i = 0; i < ballLength; i++) {
+            var ball=this.balls[i];
+           
+	    this.boundsCheck(ball);
+            this.triangle.checkBallCollision(ball);
+			
+            ball.moveVector = ball.velocity.scalarMultiplyNew(0.03);
+            ball.move();
+            ball.redraw(this.context);
+            
+	    this.context.strokeText(i, ball.position.x, ball.position.y);
+            this.context.stroke();
+            this.context.fill();
+			
+            for (var j = i + 1; j < ballLength; j++) {
+                if (ball.checkCollision(this.balls[j])) {
+                    this.resolveCollision(ball, this.balls[j]);
+                }
+            }
+        }    
+    },
+    
+    resolveCollision: function (a, b) {
+        var n = a.position.subtractNew(b.position);
+        
+        //console.log("Enter");
+        
+        n.normalise();
+        // Find the length of the component of each of the movement
+        // vectors along n. 
+        // a1 = v1 . n
+        // a2 = v2 . n
+        var a1 = a.velocity.dot(n);
+        var a2 = b.velocity.dot(n);
+        //console.log("pass2");
+        // Using the optimized version, 
+        // optimizedP =  2(a1 - a2)
+        //              -----------
+        //                m1 + m2
+        var optimizedP = (2.0 * (a1 - a2)) / (a.mass + b.mass);
+
+        // Calculate v1', the new movement vector of circle1
+        // v1' = v1 - optimizedP * m2 * n
+        //var v1' = v1 - optimizedP * circle2.mass * n;
+
+        var nv_a = a.velocity.subtractNew(n.scalarMultiplyNew(optimizedP*b.mass));
+        
+        // Calculate v1', the new movement vector of circle1
+        // v2' = v2 + optimizedP * m1 * n
+        //Vector v2' = v2 + optimizedP * circle1.mass * n;
+        var nv_b = b.velocity.addNew(n.scalarMultiplyNew(optimizedP*a.mass));
+
+        //console.log("pass3");
+
+        //console.log("nv_a", nv_a);
+        //console.log("nv_b", nv_b);
+
+        a.velocity = nv_a;
+        b.velocity = nv_b;
+        
+       // console.log("pass4", a.velocity);
+    },
+    
+    boundsCheck: function (ball) {
+        
+        //console.log(ball);
+        
+        if (ball.position.x <= ball.radius) {
+            ball.position.x = ball.radius;
+            ball.velocity.x = -ball.velocity.x;
+        }
+        if (ball.position.x >= (this.canvas.width - ball.radius)) {
+            ball.position.x = this.canvas.width - ball.radius;
+            ball.velocity.x = -ball.velocity.x;
+        }
+        if (ball.position.y <= ball.radius) {
+            ball.position.y = ball.radius;
+            ball.velocity.y = -ball.velocity.y;
+        }
+        if (ball.position.y >= (this.canvas.height - ball.radius)) {
+            ball.position.y = this.canvas.height - ball.radius;
+            ball.velocity.y = -ball.velocity.y;
+        }
+
+    },
+     
+    keyPress: function(evt, obj){
+       //console.log(evt.keyCode);
+       //console.log(obj);
+       switch (evt.keyCode) {
+           case 38:  /* Up arrow was pressed */
+               //if (this.triangle.A.y - this.canvas.height > 0){
+                  this.triangle.A.y -= 3;
+		  this.triangle.B.y -= 3;
+		  this.triangle.C.y -= 3;				  
+               //}
+           break;
+           case 40:  /* Down arrow was pressed */
+               //if (this.ship.y + this.ship.dy < this.height){
+                  this.triangle.A.y += 3;
+                  this.triangle.B.y += 3;
+                  this.triangle.C.y += 3;
+               //}
+           break;
+           case 37:  /* Left arrow was pressed */
+               //if (this.ship.x - this.ship.dx > 0){
+               //   this.triangle.A.x -= 3;
+               //   this.triangle.B.x -= 3;
+               //   this.triangle.C.x -= 3;
+		this.triangle.rotate(-0.2);
+               //}
+           break;
+           case 39:  /* Right arrow was pressed */
+               //if (this.ship.x + this.ship.dx < this.width){
+               //   this.triangle.A.x += 3;
+               //   this.triangle.B.x += 3;
+               //   this.triangle.C.x += 3;
+               //}
+		this.triangle.rotate(0.2);
+           break;
+       }
+   }
+};
+
+window.onload = function() {
+    ANIMATE.main.init();
+}
+</script>
+</body>
+
+</html>
