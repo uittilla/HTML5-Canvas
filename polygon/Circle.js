@@ -18,19 +18,11 @@ var Circle = function(width, height, id) {
     this.id         = id;
 }
 
-/**
- * Circle moves
- */
 Circle.prototype.move = function() {
     this.position.x = this.position.x + (this.moveVector.x);
     this.position.y = this.position.y + (this.moveVector.y);
 }
 
-/**
- * Checks for circle to circle collision
- * @param other
- * @returns {boolean}
- */
 Circle.prototype.checkCollision = function(other) {
     var separationVector = other.position.subtractNew(this.position);
     var distance = separationVector.magnitude();
@@ -113,11 +105,6 @@ Circle.prototype.checkCollision = function(other) {
     return true;
 }
 
-/**
- * Resolves collisions circle to circle
- * @param a
- * @param b
- */
 Circle.prototype.resolveCollision = function (a, b) {
     var n = a.position.subtractNew(b.position);
 
