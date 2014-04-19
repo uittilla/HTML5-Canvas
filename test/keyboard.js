@@ -63,8 +63,6 @@ Keyboard.prototype.keyEvent = function (keyCode, type, player) {
  */
 Keyboard.prototype.move = function (keyType, keyName, player) {
 
-    var shot   = {};
-
     // Thruster is off
     if (keyName == this.KEY_NAME_THRUSTER && keyType == this.KEY_TYPE_UP) {
         player.thruster = false;
@@ -93,44 +91,13 @@ Keyboard.prototype.move = function (keyType, keyName, player) {
         player.vr = 0;
        // player.rotate(0.05)
     }
-    // v1 here to allow thrusting turning and firing
-    if (keyName == this.KEY_NAME_SPACE && keyType == this.KEY_TYPE_DOWN) {
-        if (!player.sheild) {
-            if (player.shots.length < 5) {
-                player.addShot();
-            }
-        }
-    }
-    else if (keyName == this.KEY_NAME_SPACE && keyType == this.KEY_TYPE_UP) {
-
-    }
 
     if (keyName == this.KEY_NAME_CTRL && keyType == this.KEY_TYPE_DOWN) {
         player.sheild = true;
-        player.vr = 0;
-        player.coords.forEach(function(coords){
-            coords.y += 3;
-        });
     }
 
     if (keyName == this.KEY_NAME_CTRL && keyType == this.KEY_TYPE_UP) {
         player.sheild = false;
     }
 
-    if (keyName == this.KEY_NAME_TELEPORT && keyType == this.KEY_TYPE_DOWN) {
-        player.position.x = Math.random() * Math.floor(Math.random() * (3000 - 1 + 1)) + 1;
-        player.position.y = Math.random() * Math.floor(Math.random() * (2000 - 1 + 1)) + 1;
-    }
-
-    if (keyName == this.KEY_NAME_HELP && keyType == this.KEY_TYPE_DOWN) {
-        player.help = true;
-    }
-
-    if (keyName == this.KEY_NAME_HELP && keyType == this.KEY_TYPE_UP) {
-        player.help = false;
-    }
-
-    if (keyName == this.KEY_NAME_MAP && keyType == this.KEY_TYPE_DOWN) {
-        player.map = player.map !== true;
-    }
 }

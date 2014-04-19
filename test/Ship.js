@@ -9,20 +9,11 @@ var Player = function(sides, radius, offsetX, offsetY) {
     if (sides < 3) return;
     this.coords = [];
     this.color = 'grey';
-    var a = (Math.PI * 2)/sides;
-    for (var i = 0; i < sides; i++) {
-        this.coords.push(new Vector2D(offsetX - radius*Math.cos(a*i),offsetY - radius*Math.sin(a*i)));
-    }
-
-    this.center = this.getCenter();
-    this.position = this.center;
     this.velocity = new Vector2D(0,0);
-    this.radian = 0.005;
-    this.radian *= Math.floor(Math.random()*2) == 1 ? 1 : -1;
     this.moveVector = 1;
     this.vr         = 0; // rotation in degrees
     this._thrust    = 0;
-    this.rotation   = 2;
+    this.rotation   = 0;
     this.thruster   = false;
     this.shots      = [];
     this.particles  = [];
@@ -33,32 +24,55 @@ var Player = function(sides, radius, offsetX, offsetY) {
     this.height     = 600;
     this.width      = 800;
     this.radius     = radius;
+    this.sides      = sides;
 
-    this.radian = -0.5;
+
+    this.position = new Vector2D(offsetX, offsetY);
+    this.setCoords();
+    this.center = this.getCenter();
+
+    this.radian = 0;
     this.rotate();
 }
 
 Player.prototype.update = function () {
+    this.center = this.getCenter();
     this.boundsCheck();
 
     this.rotation += this.vr * Math.PI / 180;
 
+    if (this.rotation < -6.283185) {
+        this.rotation = 0;
+    }
+
+    if (this.rotation > 6.283185) {
+        this.rotation = 0;
+    }
+
     this.radian = this.rotation;
 
-    //this.position = this.getCoords()
-    this.velocity.x += Math.cos(this.rotation);
-    this.velocity.y += Math.sin(this.rotation);
+    this.velocity.x += Math.cos(this.rotation) * this._thrust;
+    this.velocity.y += Math.sin(this.rotation) * this._thrust;
 
-    this.moveVector = this.velocity.scalarMultiplyNew(this._thrust);
-
-    this.position.x += this.velocity.x;
-    this.position.y += this.velocity.y;
+    this.position.add(this.velocity);
 
     var self = this;
-
     this.coords.forEach(function(coords) {
-        coords.add(self.moveVector);
+        coords.add(self.velocity);
     });
+}
+
+
+/**
+ * Returns coordinates of this polygon's points
+ * @returns {Array}
+ */
+Player.prototype.setCoords = function() {
+
+    var a = (Math.PI * 2)/this.sides;
+    for (var i = 0; i < this.sides; i++) {
+        this.coords[i] = new Vector2D(this.position.x - this.radius*Math.cos(a*i),this.position.y - this.radius*Math.sin(a*i));
+    }
 }
 
 /**
@@ -94,7 +108,7 @@ Player.prototype.getCenter = function() {
 Player.prototype.rotate = function() {
 
     for(var i in this.coords) {
-        this.coords[i].rotate(this.getCenter(), this.radian);
+        this.coords[i].rotate(this.position, this.radian);
     }
 }
 
@@ -102,23 +116,20 @@ Player.prototype.boundsCheck = function () {
     var right = this.width, left = 0,
         top = 0, bottom = this.height;
 
-    var self = this;
+    if (this.position.x > right) {
+        this.position.x = left;
+    }
+    else if (this.position.x < left) {
+        this.position.x = right;
+    }
+    if (this.position.y > bottom) {
+        this.position.y = top;
+    }
+    else if (this.position.y < top) {
+        this.position.y = bottom;
+    }
 
-    // close
-    this.coords.forEach(function(coords) {
-        if (coords.x > right) {
-            coords.x = left;
-        }
-        else if (coords.x < left) {
-            coords.x = right;
-        } else if (coords.y > bottom) {
-            coords.y = top;
-        }
-        else if (coords.y < top) {
-            coords.y = bottom;
-        }
-
-    });
+    this.setCoords();
 }
 
 /**
@@ -166,23 +177,24 @@ Player.prototype.checkObj = function (a,b,object, context) {
             object.velocity.subtract(NV2);
         }
 
-        var danger = (30);
+        var danger = 75;
 
         if (XP.magnitude() < danger) {
             context.beginPath();
             context.moveTo(P.x, P.y);
             context.lineTo(P.x + (danger*N.x), P.y + (danger*N.y));
-            context.strokeStyle = "red";
-            context.lineWidth = 3;
+            context.strokeStyle = "blue";
+            context.lineWidth = 1;
             context.globalAlpha = 0.5;
             context.stroke();
             context.beginPath();
             context.arc(P.x, P.y, 4, 0, Math.PI * 2, true);
             context.closePath();
-            context.strokeStyle = "red";
+            context.strokeStyle = "blue";
             context.stroke();
             context.lineWidth = 1;
         }
+
     }
 }
 

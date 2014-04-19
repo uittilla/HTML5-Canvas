@@ -106,7 +106,7 @@ Polygon.prototype.checkObj = function (a,b,object, context) {
 			context.moveTo(P.x, P.y);
 			context.lineTo(P.x + (danger*N.x), P.y + (danger*N.y));
 			context.strokeStyle = "red";
-            context.lineWidth = 3;
+            context.lineWidth = 1;
             context.globalAlpha = 0.5;
 			context.stroke();
 			context.beginPath();
