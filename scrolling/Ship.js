@@ -26,13 +26,15 @@ var Player = function(sides, radius, offsetX, offsetY) {
     this.radius     = radius;
     this.sides      = sides;
 
-
     this.position = new Vector2D(offsetX, offsetY);
+
+
     this.setCoords();
     this.center = this.getCenter();
 
-    this.radian = 0;
+    this.radian = -6.283185;
     this.rotate();
+
 }
 
 Player.prototype.update = function () {
@@ -50,6 +52,8 @@ Player.prototype.update = function () {
     }
 
     this.radian = this.rotation;
+
+    this.rotate();
 
     this.velocity.x += Math.cos(this.rotation) * this._thrust;
     this.velocity.y += Math.sin(this.rotation) * this._thrust;
@@ -177,7 +181,7 @@ Player.prototype.checkObj = function (a,b,object, context) {
             object.velocity.subtract(NV2);
         }
 
-        var danger = 75;
+        var danger = 95;
 
         if (XP.magnitude() < danger) {
             context.beginPath();

@@ -17,14 +17,16 @@ Main.prototype.setup = function () {
 
     for(var p= 0; p<10; p++) {
         var a = (Math.PI * 2) / 3+p;
-        var x = Math.floor(Math.random() * canvas.width),
-            y = Math.floor(Math.random() * canvas.height);
+        var x = 100*p,
+            y = canvas.height / 2;
 
-        this.polygons.push(new Polygon(3+p, Math.floor(Math.random() * 50) + 10, x, y));
+        this.polygons.push(new Polygon(3+p, Math.floor(Math.random() * 50) + 10, x, y-200));
+       // this.polygons.push(new Polygon(3+p, Math.floor(Math.random() * 50) + 10, x, y));
+        this.polygons.push(new Polygon(3+p, Math.floor(Math.random() * 50) + 10, x, y+200));
         this.objects.push(new Circle(canvas.width, canvas.height, p));
     }
 
-    this.ship = new Player(12, 25, 200, 300);
+    this.ship = new Player(4, 25, 200, 300);
 
     var keyboard = new Keyboard();
 
@@ -81,19 +83,20 @@ Main.prototype.drawShip = function(ship) {
     var flame = [30, 31, 32, 33, 34, 35];
 
     context.save();
-    if(ship.sheild) {
+    //if(ship.sheild) {
         context.beginPath();
         context.moveTo(coords[0].x, coords[0].y);
-        context.rotate(this.rotation);
+       // context.translate(ship.position.x, ship.position.y);
+       // context.rotate(ship.rotation);
 
         context.fillStyle = "yellow";
         context.globalAlpha = 0.5;
         while (cLength--) {
             context.lineTo(coords[cLength].x, coords[cLength].y);
         }
-        //context.fill();
+        context.fill();
         context.stroke();
-    }
+    //}
 
     context.fillStyle = "black";
     context.fillText(ship.rotation,10, 10);
@@ -104,10 +107,10 @@ Main.prototype.drawShip = function(ship) {
     context.translate(ship.position.x, ship.position.y);
     context.rotate(ship.rotation);
 
-    context.globalAlpha = 1;
+    /*context.globalAlpha = 1;
     context.beginPath();
     context.drawImage(this.craft, -20, -23);
-    context.closePath();
+    context.closePath();*/
 
     if (ship.thruster) {
         context.beginPath();
