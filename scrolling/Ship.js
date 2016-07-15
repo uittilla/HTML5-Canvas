@@ -7,9 +7,9 @@
 
 var Player = function(sides, radius, offsetX, offsetY) {
     if (sides < 3) return;
-    this.coords = [];
-    this.color = 'grey';
-    this.velocity = new Vector2D(0,0);
+    this.coords     = [];
+    this.color      = 'grey';
+    this.velocity   = new Vector2D(0,0);
     this.moveVector = 1;
     this.vr         = 0; // rotation in degrees
     this._thrust    = 0;
@@ -25,9 +25,7 @@ var Player = function(sides, radius, offsetX, offsetY) {
     this.width      = 800;
     this.radius     = radius;
     this.sides      = sides;
-
-    this.position = new Vector2D(offsetX, offsetY);
-
+    this.position   = new Vector2D(offsetX, offsetY);
 
     this.setCoords();
     this.center = this.getCenter();

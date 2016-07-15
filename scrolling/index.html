@@ -11,9 +11,11 @@
 </head>
 
 <body>
-<canvas id="canvas" width="800" height="600" style="border:1px inset red">
-    No support for Canvas.... Sorry
-</canvas>
+<div id="wrapper" height="100%" width="100%">
+    <canvas id="canvas" width="10000" height="800" style="border:1px inset red">
+        No support for Canvas.... Sorry
+    </canvas>
+</div>
 <script type="text/javascript" src="Vector2d.js"></script>
 <script type="text/javascript" src="Circle.js"></script>
 <script type="text/javascript" src="keyboard.js"></script>
@@ -21,20 +23,25 @@
 <script type="text/javascript" src="Polygon.js"></script>
 <script type="text/javascript" src="main.js"></script>
 <script type="text/javascript">
-window.onload = function() {
-    window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
-            window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+    window.onload = function() {
+        window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+        window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
 
-    var main = new Main();
-    main.setup();
+        var main = new Main();
+        main.setup();
 
-    function draw() {
-        requestAnimationFrame(draw);
-        main.update();
+        function draw() {
+            requestAnimationFrame(draw);
+            main.update();
+        }
+
+        draw();
+
+        var t0 = window.performance.now();
+        setInterval(function(){
+            canvas.style.marginLeft = -(window.performance.now() - t0)/15 + "px";
+        }, 15);
     }
-
-    draw();
-}
 </script>
 </body>
 

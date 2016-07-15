@@ -1,6 +1,6 @@
 
 var canvas  = document.getElementById("canvas");
-var context = this.canvas.getContext("2d");
+var context = canvas.getContext("2d");
 
 var Main = function () {
     this.objects = [];
@@ -14,16 +14,19 @@ Main.prototype.setup = function () {
 
     this.craft = new Image();
     this.craft.src = "fighter.png";
+    var self = this;
 
-    for(var p= 0; p<10; p++) {
-        var a = (Math.PI * 2) / 3+p;
-        var x = 100*p,
-            y = canvas.height / 2;
+    for (var i = 0; i < 100; i++) {
+        //for (var p = 0; p < 10; p++) {
+            var a = (Math.PI * 2) / 3 + 2;
+            var x = Math.random() * 10000,
+                y = Math.random() * 800;
 
-        this.polygons.push(new Polygon(3+p, Math.floor(Math.random() * 50) + 10, x, y-200));
-       // this.polygons.push(new Polygon(3+p, Math.floor(Math.random() * 50) + 10, x, y));
-        this.polygons.push(new Polygon(3+p, Math.floor(Math.random() * 50) + 10, x, y+200));
-        this.objects.push(new Circle(canvas.width, canvas.height, p));
+            //self.polygons.push(new Polygon(3 + 5, Math.floor(Math.random() * 50) + 10, x, y - 200));
+            //this.polygons.push(new Polygon(3+p, Math.floor(Math.random() * 50) + 10, x, y));
+            self.polygons.push(new Polygon(3 + i, Math.floor(Math.random() * 50) + 10, x, y + 200));
+            self.objects.push(new Circle(canvas.width, canvas.height, i));
+        //}
     }
 
     this.ship = new Player(4, 25, 200, 300);
