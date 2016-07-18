@@ -20,18 +20,21 @@ class Main {
         let self = this;
         let x,y;
         let i = 0;
+        let points = 3;
 
-        for (i; i < 35; i++) {
+        for (i; i < 30; i++) {
             x = Math.random() * 10000;
             y = Math.random() * 800;
-            this.polygons.push(new Polygon(3 + Math.random() * 10, Math.floor(Math.random() * 50) + 10, x, y));
+            points = Math.random() * 8;
+            points = points < 3 ? 3 : points;
+            this.polygons.push(new Polygon(points, Math.floor(Math.random() * 50) + 10, x, y));
         }
 
         for (i=0; i < 30; i++) {
             this.objects.push(new Circle(CANVAS.width, CANVAS.height, i));
         }
 
-        this.ship = new Player(4, 25, 200, 300);
+        this.ship = new Player(8, 25, 200, 300);
 
         let keyboard = new Keyboard();
 
@@ -100,6 +103,7 @@ class Main {
         // CONTEXT.translate(ship.position.x, ship.position.y);
         // CONTEXT.rotate(ship.rotation);
 
+        /*
         CONTEXT.fillStyle = "yellow";
         CONTEXT.globalAlpha = 0.5;
 
@@ -115,7 +119,7 @@ class Main {
         CONTEXT.fillText(ship.rotation,10, 10);
         CONTEXT.stroke();
         CONTEXT.closePath();
-
+        */
         CONTEXT.lineWidth = 1;
         CONTEXT.translate(ship.position.x, ship.position.y);
         CONTEXT.rotate(ship.rotation);

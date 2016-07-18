@@ -2,8 +2,8 @@
 
 class Circle {
     constructor(width, height, id) {
-        let rad = Math.floor(Math.random() * 30);
-        let colours = ['red', 'green', 'yellow', 'black', 'silver', 'orange', 'pink'];
+        let rad = Math.floor(Math.random() * 10);
+        let colours = ['red', 'green', 'yellow', 'silver', 'orange', 'pink'];
 
         let x = Math.floor(Math.random() * width),
             y = Math.floor(Math.random() * height),

@@ -27,8 +27,8 @@
 
 <body>
 <div iclass="wrapper" height="100%" width="100%">
-    <canvas id="canvasbg" width="10000" height="800"></canvas>
-    <canvas id="canvas" width="10000" height="800"> </canvas>
+    <canvas id="canvasbg" width="10000" height="1000"></canvas>
+    <canvas id="canvas" width="10000" height="1000"> </canvas>
 </div>
 
 <script type="text/javascript" src="Vector2d.js"></script>
@@ -39,6 +39,7 @@
 <script type="text/javascript" src="main.js"></script>
 <script type="text/javascript">
     window.onload = function() {
+        document.documentElement.style.overflow = 'hidden';
         window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
         window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
 

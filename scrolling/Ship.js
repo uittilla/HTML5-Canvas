@@ -21,8 +21,8 @@ class Player {
         this.score = 0;
         this.round = 1;
         this.lives = 3;
-        this.height = 600;
-        this.width = 800;
+        this.height = 800;
+        this.width = 10000;
         this.radius = radius;
         this.sides = sides;
         this.position = new Vector2D(offsetX, offsetY);
@@ -119,6 +119,8 @@ class Player {
     boundsCheck() {
         let right = this.width, left = 0,
             top = 0, bottom = this.height;
+
+        let diff = 0;
 
         if (this.position.x > right) {
             this.position.x = left;
