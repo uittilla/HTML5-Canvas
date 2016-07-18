@@ -2,13 +2,13 @@
 
 class Circle {
     constructor(width, height, id) {
-        var rad = Math.floor(Math.random() * 30);
-        var colours = ['red', 'green', 'yellow', 'black', 'silver', 'orange', 'pink'];
+        let rad = Math.floor(Math.random() * 30);
+        let colours = ['red', 'green', 'yellow', 'black', 'silver', 'orange', 'pink'];
 
-        var x = Math.floor(Math.random() * width),
+        let x = Math.floor(Math.random() * width),
             y = Math.floor(Math.random() * height),
-            vx = Math.floor(Math.random() * 10),
-            vy = Math.floor(Math.random() * 10);
+            vx = Math.floor(Math.random() * 7),
+            vy = Math.floor(Math.random() * 7);
 
         this.position   = new Vector2D(x,y);
         this.velocity   = new Vector2D(vx, vy);
@@ -27,10 +27,10 @@ class Circle {
     }
 
     checkCollision(other) {
-        var separationVector = other.position.subtractNew(this.position);
-        var distance = separationVector.magnitude();
-        var sumRadii = (this.radius + other.radius);
-        var moveVector = this.moveVector.subtractNew(other.moveVector);
+        let separationVector = other.position.subtractNew(this.position);
+        let distance = separationVector.magnitude();
+        let sumRadii = (this.radius + other.radius);
+        let moveVector = this.moveVector.subtractNew(other.moveVector);
 
         distance -= sumRadii;
 
@@ -39,11 +39,11 @@ class Circle {
         }
 
         // Normalize the movevector
-        var N = moveVector.copy();
+        let N = moveVector.copy();
         N.normalise();
 
         // D = N . C = ||C|| * cos(angle between N and C)
-        var D = N.dot(separationVector);
+        let D = N.dot(separationVector);
 
         // Another early escape: Make sure that A is moving
         // towards B! If the dot product between the movevec and
@@ -53,19 +53,19 @@ class Circle {
             return false;
         }
 
-        var F = (distance * distance) - (D * D);
+        let F = (distance * distance) - (D * D);
 
         // Escape test: if the closest that A will get to B
         // is more than the sum of their radii, there's no
         // way they are going collide
-        var sumRadiiSquared = sumRadii * sumRadii;
+        let sumRadiiSquared = sumRadii * sumRadii;
         if (F >= sumRadiiSquared) {
             return false;
         }
 
         // We now have F and sumRadii, two sides of a right triangle.
         // Use these to find the third side, sqrt(T)
-        var T = sumRadiiSquared - F;
+        let T = sumRadiiSquared - F;
 
         // If there is no such right triangle with sides length of
         // sumRadii and sqrt(f), T will probably be less than 0.
@@ -81,15 +81,17 @@ class Circle {
         // f(x) = x*x - Input.value
         // f'(x) = 2*x
         // Assumes convergence in 10 iterations
-        var X = 1;
-        for (var i = 0; i < 5; i++)
+        let X = 1;
+        let i = 0;
+
+        for (i; i < 5; i++)
             X = X - ((X * X - T) / (2 * X));
 
         T = X;
-        var distance = D - T; //Math.sqrt(T);
+        let distance = D - T; //Math.sqrt(T);
 
         // Get the magnitude of the movement vector
-        var mag = moveVector.magnitude()
+        let mag = moveVector.magnitude()
 
         // Finally, make sure that the distance A has to move
         // to touch B is not greater than the magnitude of the
@@ -101,7 +103,7 @@ class Circle {
         moveVector.normalise();
         moveVector.scalarMultiply(distance);
 
-        var ratio = moveVector.magnitude() / mag;
+        let ratio = moveVector.magnitude() / mag;
         moveVector.scalarMultiply(ratio);
         other.moveVector.scalarMultiply(ratio);
 
@@ -109,7 +111,7 @@ class Circle {
     }
 
     resolveCollision(a, b) {
-        var n = a.position.subtractNew(b.position);
+        let n = a.position.subtractNew(b.position);
 
         //console.log("Enter");
 
@@ -118,25 +120,25 @@ class Circle {
         // vectors along n.
         // a1 = v1 . n
         // a2 = v2 . n
-        var a1 = a.velocity.dot(n);
-        var a2 = b.velocity.dot(n);
+        let a1 = a.velocity.dot(n);
+        let a2 = b.velocity.dot(n);
         //console.log("pass2");
         // Using the optimized version,
         // optimizedP =  2(a1 - a2)
         //              -----------
         //                m1 + m2
-        var optimizedP = (2.0 * (a1 - a2)) / (a.mass + b.mass);
+        let optimizedP = (2.0 * (a1 - a2)) / (a.mass + b.mass);
 
         // Calculate v1', the new movement vector of circle1
         // v1' = v1 - optimizedP * m2 * n
         //var v1' = v1 - optimizedP * circle2.mass * n;
 
-        var nv_a = a.velocity.subtractNew(n.scalarMultiplyNew(optimizedP * b.mass));
+        let nv_a = a.velocity.subtractNew(n.scalarMultiplyNew(optimizedP * b.mass));
 
         // Calculate v1', the new movement vector of circle1
         // v2' = v2 + optimizedP * m1 * n
         //Vector v2' = v2 + optimizedP * circle1.mass * n;
-        var nv_b = b.velocity.addNew(n.scalarMultiplyNew(optimizedP * a.mass));
+        let nv_b = b.velocity.addNew(n.scalarMultiplyNew(optimizedP * a.mass));
 
         //console.log("pass3");
 
