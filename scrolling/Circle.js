@@ -88,7 +88,7 @@ class Circle {
             X = X - ((X * X - T) / (2 * X));
 
         T = X;
-        let distance = D - T; //Math.sqrt(T);
+        distance = D - T; //Math.sqrt(T);
 
         // Get the magnitude of the movement vector
         let mag = moveVector.magnitude()
