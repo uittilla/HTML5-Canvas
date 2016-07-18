@@ -1,7 +1,173 @@
+"use strict";
 
-var canvas  = document.getElementById("canvas");
-var context = canvas.getContext("2d");
+const CANVAS  = document.getElementById("canvas");
+const CONTEXT = CANVAS.getContext("2d");
 
+class Main {
+
+    constructor() {
+        this.objects = [];
+        this.mouse = {};
+        this.objects = [];
+        this.polygons = [];
+        this.ship = null;
+    }
+
+    setup() {
+        this.craft = new Image();
+        this.craft.src = "fighter.png";
+
+        let self = this;
+        let x,y;
+        let i = 0;
+
+        for (i; i < 35; i++) {
+            x = Math.random() * 10000;
+            y = Math.random() * 800;
+            this.polygons.push(new Polygon(3 + Math.random() * 10, Math.floor(Math.random() * 50) + 10, x, y));
+        }
+
+        for (i=0; i < 30; i++) {
+            this.objects.push(new Circle(CANVAS.width, CANVAS.height, i));
+        }
+
+        this.ship = new Player(4, 25, 200, 300);
+
+        let keyboard = new Keyboard();
+
+        document.addEventListener('keydown', function (event) {
+            keyboard.keyEvent(event.keyCode, event.type, this.ship);
+        }.bind(this), false);
+
+        document.addEventListener('keyup', function (event) {
+            keyboard.keyEvent(event.keyCode, event.type, this.ship);
+        }.bind(this), false);
+    }
+
+    update () {
+        CONTEXT.clearRect(0, 0, CANVAS.width, CANVAS.height);
+
+        let t=0;
+
+        for(t in this.polygons) {
+            this.draw(this.polygons[t]);
+            this.polygons[t].checkObjCollision(this.ship, CONTEXT);
+            this.ship.checkObjCollision(this.polygons[t], CONTEXT);
+
+            var objLength = this.objects.length;
+
+            for (var i = 0; i < objLength; i++) {
+                var obj = this.objects[i];
+
+                for (var j = i + 1; j < objLength; j++) {
+                    if (obj.checkCollision(this.objects[j])) {
+                        obj.resolveCollision(obj, this.objects[j]);
+                    }
+                }
+
+                obj.boundsCheck(obj);
+                obj.moveVector = obj.velocity.scalarMultiplyNew(0.03);
+                obj.move();
+
+                this.polygons[t].checkObjCollision(obj, CONTEXT);
+                this.ship.checkObjCollision(obj, CONTEXT);
+
+                this.redrawCircle(obj);
+            }
+
+            //   this.polygons[t].position.x -= 0.2;
+
+        }
+
+        CONTEXT.save();
+
+        this.ship.update();
+        this.drawShip(this.ship);
+
+        CONTEXT.restore();
+    }
+
+    drawShip(ship) {
+        var coords = ship.getCoords();
+        var cLength = coords.length;
+        var exhaust = ['red', 'orange', 'yellow', 'purple', 'green'];
+        var flame = [30, 31, 32, 33, 34, 35];
+
+
+        //if(ship.sheild) {
+        CONTEXT.beginPath();
+        CONTEXT.moveTo(coords[0].x, coords[0].y);
+        // CONTEXT.translate(ship.position.x, ship.position.y);
+        // CONTEXT.rotate(ship.rotation);
+
+        CONTEXT.fillStyle = "yellow";
+        CONTEXT.globalAlpha = 0.5;
+
+        while (cLength--) {
+            CONTEXT.lineTo(coords[cLength].x, coords[cLength].y);
+        }
+
+        CONTEXT.fill();
+        CONTEXT.stroke();
+        //}
+
+        CONTEXT.fillStyle = "black";
+        CONTEXT.fillText(ship.rotation,10, 10);
+        CONTEXT.stroke();
+        CONTEXT.closePath();
+
+        CONTEXT.lineWidth = 1;
+        CONTEXT.translate(ship.position.x, ship.position.y);
+        CONTEXT.rotate(ship.rotation);
+
+        CONTEXT.globalAlpha = 1;
+        CONTEXT.beginPath();
+        CONTEXT.drawImage(this.craft, -20, -23);
+        CONTEXT.closePath();
+
+        if (ship.thruster) {
+            CONTEXT.beginPath();
+            CONTEXT.moveTo(-17.5, -2.5);
+            CONTEXT.lineTo(-flame[Math.floor(flame.length * Math.random())], 0);
+            CONTEXT.lineTo(-17.5, 2);
+            CONTEXT.fillStyle = exhaust[Math.floor(exhaust.length * Math.random())];
+            CONTEXT.fill();
+            CONTEXT.stroke();
+            CONTEXT.closePath();
+        }
+
+    }
+
+    draw (polygon) {
+        let coords = polygon.getCoords();
+        let cLength = coords.length;
+
+        CONTEXT.save();
+        CONTEXT.beginPath();
+        CONTEXT.translate(polygon.x, polygon.y);
+        CONTEXT.moveTo(coords[0].x,coords[0].y);
+        CONTEXT.fillStyle = "grey";
+        CONTEXT.globalAlpha = 0.5;
+
+        while (cLength--) {
+            CONTEXT.lineTo(coords[cLength].x, coords[cLength].y);
+        }
+        CONTEXT.fill();
+        CONTEXT.stroke();
+        CONTEXT.restore();
+
+        polygon.rotate()
+    }
+
+    redrawCircle (circle) {
+        CONTEXT.fillStyle = circle.colour;
+        CONTEXT.beginPath();
+        CONTEXT.arc(circle.position.x, circle.position.y, circle.radius, 0, Math.PI * 2, true);
+        CONTEXT.fill();
+        CONTEXT.closePath();
+    }
+}
+/*
 var Main = function () {
     this.objects = [];
     this.mouse = {};
@@ -15,18 +181,16 @@ Main.prototype.setup = function () {
     this.craft = new Image();
     this.craft.src = "fighter.png";
     var self = this;
+    var x,y;
 
-    for (var i = 0; i < 100; i++) {
-        //for (var p = 0; p < 10; p++) {
-            var a = (Math.PI * 2) / 3 + 2;
-            var x = Math.random() * 10000,
-                y = Math.random() * 800;
+    for (var i = 0; i < 35; i++) {
+        x = Math.random() * 10000;
+        y = Math.random() * 800;
+        this.polygons.push(new Polygon(3 + Math.random() * 10, Math.floor(Math.random() * 50) + 10, x, y));
+    }
 
-            //self.polygons.push(new Polygon(3 + 5, Math.floor(Math.random() * 50) + 10, x, y - 200));
-            //this.polygons.push(new Polygon(3+p, Math.floor(Math.random() * 50) + 10, x, y));
-            self.polygons.push(new Polygon(3 + i, Math.floor(Math.random() * 50) + 10, x, y + 200));
-            self.objects.push(new Circle(canvas.width, canvas.height, i));
-        //}
+    for (var i = 0; i < 30; i++) {
+        this.objects.push(new Circle(CANVAS.width, CANVAS.height, i));
     }
 
     this.ship = new Player(4, 25, 200, 300);
@@ -43,12 +207,12 @@ Main.prototype.setup = function () {
 }
 
 Main.prototype.update = function () {
-    context.clearRect(0, 0, canvas.width, canvas.height);
+    CONTEXT.clearRect(0, 0, CANVAS.width, CANVAS.height);
 
     for(var t in this.polygons) {
         this.draw(this.polygons[t]);
-        this.polygons[t].checkObjCollision(this.ship, context);
-        this.ship.checkObjCollision(this.polygons[t], context);
+        this.polygons[t].checkObjCollision(this.ship, CONTEXT);
+        this.ship.checkObjCollision(this.polygons[t], CONTEXT);
 
         var objLength = this.objects.length;
 
@@ -65,8 +229,8 @@ Main.prototype.update = function () {
             obj.moveVector = obj.velocity.scalarMultiplyNew(0.03);
             obj.move();
 
-            this.polygons[t].checkObjCollision(obj, context);
-            this.ship.checkObjCollision(obj, context);
+            this.polygons[t].checkObjCollision(obj, CONTEXT);
+            this.ship.checkObjCollision(obj, CONTEXT);
 
             this.redrawCircle(obj);
         }
@@ -75,8 +239,12 @@ Main.prototype.update = function () {
 
     }
 
+    CONTEXT.save();
+
     this.ship.update();
     this.drawShip(this.ship);
+
+    CONTEXT.restore();
 }
 
 Main.prototype.drawShip = function(ship) {
@@ -85,75 +253,77 @@ Main.prototype.drawShip = function(ship) {
     var exhaust = ['red', 'orange', 'yellow', 'purple', 'green'];
     var flame = [30, 31, 32, 33, 34, 35];
 
-    context.save();
-    //if(ship.sheild) {
-        context.beginPath();
-        context.moveTo(coords[0].x, coords[0].y);
-       // context.translate(ship.position.x, ship.position.y);
-       // context.rotate(ship.rotation);
 
-        context.fillStyle = "yellow";
-        context.globalAlpha = 0.5;
+    //if(ship.sheild) {
+        CONTEXT.beginPath();
+        CONTEXT.moveTo(coords[0].x, coords[0].y);
+       // CONTEXT.translate(ship.position.x, ship.position.y);
+       // CONTEXT.rotate(ship.rotation);
+
+        CONTEXT.fillStyle = "yellow";
+        CONTEXT.globalAlpha = 0.5;
+
         while (cLength--) {
-            context.lineTo(coords[cLength].x, coords[cLength].y);
+            CONTEXT.lineTo(coords[cLength].x, coords[cLength].y);
         }
-        context.fill();
-        context.stroke();
+
+        CONTEXT.fill();
+        CONTEXT.stroke();
     //}
 
-    context.fillStyle = "black";
-    context.fillText(ship.rotation,10, 10);
-    context.stroke();
-    context.closePath();
+    CONTEXT.fillStyle = "black";
+    CONTEXT.fillText(ship.rotation,10, 10);
+    CONTEXT.stroke();
+    CONTEXT.closePath();
 
-    context.lineWidth = 1;
-    context.translate(ship.position.x, ship.position.y);
-    context.rotate(ship.rotation);
+    CONTEXT.lineWidth = 1;
+    CONTEXT.translate(ship.position.x, ship.position.y);
+    CONTEXT.rotate(ship.rotation);
 
-    /*context.globalAlpha = 1;
-    context.beginPath();
-    context.drawImage(this.craft, -20, -23);
-    context.closePath();*/
+    CONTEXT.globalAlpha = 1;
+    CONTEXT.beginPath();
+    CONTEXT.drawImage(this.craft, -20, -23);
+    CONTEXT.closePath();
 
     if (ship.thruster) {
-        context.beginPath();
-        context.moveTo(-17.5, -2.5);
-        context.lineTo(-flame[Math.floor(flame.length * Math.random())], 0);
-        context.lineTo(-17.5, 2);
-        context.fillStyle = exhaust[Math.floor(exhaust.length * Math.random())];
-        context.fill();
-        context.stroke();
-        context.closePath();
+        CONTEXT.beginPath();
+        CONTEXT.moveTo(-17.5, -2.5);
+        CONTEXT.lineTo(-flame[Math.floor(flame.length * Math.random())], 0);
+        CONTEXT.lineTo(-17.5, 2);
+        CONTEXT.fillStyle = exhaust[Math.floor(exhaust.length * Math.random())];
+        CONTEXT.fill();
+        CONTEXT.stroke();
+        CONTEXT.closePath();
     }
 
-    context.restore();
 }
 
 Main.prototype.draw = function(polygon) {
     var coords = polygon.getCoords();
     var cLength = coords.length;
 
-    context.save();
-    context.beginPath();
-    context.translate(polygon.x, polygon.y);
-    context.moveTo(coords[0].x,coords[0].y);
-    context.fillStyle = "grey";
-    context.globalAlpha = 0.5;
+    CONTEXT.save();
+    CONTEXT.beginPath();
+    CONTEXT.translate(polygon.x, polygon.y);
+    CONTEXT.moveTo(coords[0].x,coords[0].y);
+    CONTEXT.fillStyle = "grey";
+    CONTEXT.globalAlpha = 0.5;
 
     while (cLength--) {
-        context.lineTo(coords[cLength].x, coords[cLength].y);
+        CONTEXT.lineTo(coords[cLength].x, coords[cLength].y);
     }
-    context.fill();
-    context.stroke();
-    context.restore();
+    CONTEXT.fill();
+    CONTEXT.stroke();
+    CONTEXT.restore();
 
     polygon.rotate()
 }
 
 Main.prototype.redrawCircle = function(circle) {
-    context.fillStyle = circle.colour;
-    context.beginPath();
-    context.arc(circle.position.x, circle.position.y, circle.radius, 0, Math.PI * 2, true);
-    context.fill();
-    context.closePath();
+    CONTEXT.fillStyle = circle.colour;
+    CONTEXT.beginPath();
+    CONTEXT.arc(circle.position.x, circle.position.y, circle.radius, 0, Math.PI * 2, true);
+    CONTEXT.fill();
+    CONTEXT.closePath();
 }
+*/

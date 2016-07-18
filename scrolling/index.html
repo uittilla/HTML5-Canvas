@@ -3,19 +3,34 @@
 <head>
     <title>Title of the document</title>
     <style type="text/css">
-        canvas#primaryCanvas
-        {
-            border:red 1px solid;
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #canvasbg { background:url(bg1.png) }
+
+        .wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .wrapper canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
         }
     </style>
 </head>
 
 <body>
-<div id="wrapper" height="100%" width="100%">
-    <canvas id="canvas" width="10000" height="800" style="border:1px inset red">
-        No support for Canvas.... Sorry
-    </canvas>
+<div iclass="wrapper" height="100%" width="100%">
+    <canvas id="canvasbg" width="10000" height="800"></canvas>
+    <canvas id="canvas" width="10000" height="800"> </canvas>
 </div>
+
 <script type="text/javascript" src="Vector2d.js"></script>
 <script type="text/javascript" src="Circle.js"></script>
 <script type="text/javascript" src="keyboard.js"></script>
@@ -40,6 +55,7 @@
         var t0 = window.performance.now();
         setInterval(function(){
             canvas.style.marginLeft = -(window.performance.now() - t0)/15 + "px";
+            canvasbg.style.marginLeft = -(window.performance.now() - t0)/15 + "px";
         }, 15);
     }
 </script>
