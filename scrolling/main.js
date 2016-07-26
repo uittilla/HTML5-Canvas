@@ -10,12 +10,64 @@ class Main {
         this.mouse = {};
         this.objects = [];
         this.polygons = [];
+        this.planets = [];
         this.ship = null;
     }
 
     setup() {
         this.craft = new Image();
         this.craft.src = "fighter.png";
+        this.station = new Image();
+        this.station.src = "spacestation.png"
+
+
+        let p=0,x=0,y=0;
+
+        for(let i=2;i<=7;i++){
+
+
+            x = Math.random() * 10000;
+            y = Math.random() * 800;
+
+            this.planets["p"+i] = {};
+            this.planets["p"+i].obj = new Image();
+            this.planets["p"+i].obj.src = i+".png";
+            this.planets["p"+i].x = x;
+            this.planets["p"+i].y = y;
+
+        }
+
+        let self = this, i;
+        this.addPolygons();
+        this.addPlanets();
+        this.addCircle();
+
+
+        this.ship = new Player(8, 25, 200, 300);
+
+        let keyboard = new Keyboard();
+
+        document.addEventListener('keydown', function (event) {
+            keyboard.keyEvent(event.keyCode, event.type, this.ship);
+        }.bind(this), false);
+
+        document.addEventListener('keyup', function (event) {
+            keyboard.keyEvent(event.keyCode, event.type, this.ship);
+        }.bind(this), false);
+    }
+
+    addPlanets() {
+        let p=0,x=0,y=0;
+
+        for(p in this.planets) {
+            x = Math.random() * 10000;
+            y = Math.random() * 800;
+            this.planets[p].x = x;
+            this.planets[p].y = y;
+        }
+    }
+
+    addPolygons() {
 
         let self = this;
         let x,y;
@@ -29,22 +81,13 @@ class Main {
             points = points < 3 ? 3 : points;
             this.polygons.push(new Polygon(points, Math.floor(Math.random() * 50) + 10, x, y));
         }
+    }
 
-        for (i=0; i < 30; i++) {
+    addCircle() {
+        let i=0;
+        for (i; i < 30; i++) {
             this.objects.push(new Circle(CANVAS.width, CANVAS.height, i));
         }
-
-        this.ship = new Player(8, 25, 200, 300);
-
-        let keyboard = new Keyboard();
-
-        document.addEventListener('keydown', function (event) {
-            keyboard.keyEvent(event.keyCode, event.type, this.ship);
-        }.bind(this), false);
-
-        document.addEventListener('keyup', function (event) {
-            keyboard.keyEvent(event.keyCode, event.type, this.ship);
-        }.bind(this), false);
     }
 
     update () {
@@ -75,7 +118,8 @@ class Main {
                 this.polygons[t].checkObjCollision(obj, CONTEXT);
                 this.ship.checkObjCollision(obj, CONTEXT);
 
-                this.redrawCircle(obj);
+                obj.draw(CONTEXT);//
+                //this.redrawCircle(obj);
             }
 
             //   this.polygons[t].position.x -= 0.2;
@@ -84,9 +128,14 @@ class Main {
 
         CONTEXT.save();
 
+        let p;
+        for(p in this.planets) {
+            CONTEXT.drawImage(this.planets[p].obj, this.planets[p].x, this.planets[p].y);
+        }
+
         this.ship.update();
         this.drawShip(this.ship);
-
+        CONTEXT.drawImage(this.station,1850,250);
         CONTEXT.restore();
     }
 
@@ -150,8 +199,8 @@ class Main {
         CONTEXT.beginPath();
         CONTEXT.translate(polygon.x, polygon.y);
         CONTEXT.moveTo(coords[0].x,coords[0].y);
-        CONTEXT.fillStyle = "grey";
-        CONTEXT.globalAlpha = 0.5;
+        CONTEXT.fillStyle = "white";
+        CONTEXT.globalAlpha = 0.8;
 
         while (cLength--) {
             CONTEXT.lineTo(coords[cLength].x, coords[cLength].y);

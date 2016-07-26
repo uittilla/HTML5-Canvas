@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Title of the document</title>
+    <style type="text/css">
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #canvasbg {
+            background:url(images/bg1.png);
+            background-repeat: repeat;
+        }
+
+        .wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .wrapper canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+
+<body>
+<div class="wrapper" height="100%" width="100%">
+    <canvas id="canvasbg" width="10000" height="1000"></canvas>
+    <canvas id="canvas" width="10000" height="1000"> </canvas>
+</div>
+<script type="text/javascript" src="lib/Vector2d.js"></script>
+<script type="text/javascript" src="lib/Enemybomber.js"></script>
+<script type="text/javascript" src="lib/Enemyfighter.js"></script>
+<script type="text/javascript" src="lib/Basestation.js"></script>
+<script type="text/javascript" src="lib/Particle.js"></script>
+<script type="text/javascript" src="lib/Polygon.js"></script>
+<script type="text/javascript" src="lib/Keyboard.js"></script>
+<script type="text/javascript" src="lib/Ship.js"></script>
+<script type="text/javascript" src="lib/main.js"></script>
+
+<script type="text/javascript">
+    window.onload = function() {
+        document.documentElement.style.overflow = 'hidden';
+        if (!window.requestAnimationFrame) {
+            window.requestAnimationFrame = (window.webkitRequestAnimationFrame ||
+            window.mozRequestAnimationFrame ||
+            window.msRequestAnimationFrame ||
+            window.oRequestAnimationFrame ||
+            function (callback) {
+                return window.setTimeout(callback, 17 /*~ 1000/60*/);
+            });
+        }
+
+        if (!window.cancelRequestAnimationFrame) {
+            window.cancelRequestAnimationFrame = (window.cancelAnimationFrame ||
+            window.webkitCancelRequestAnimationFrame ||
+            window.mozCancelRequestAnimationFrame ||
+            window.msCancelRequestAnimationFrame ||
+            window.oCancelRequestAnimationFrame ||
+            window.clearTimeout);
+        }
+
+        var main = new Main();
+        main.setup();
+        var animationFrame;
+
+        function draw() {
+            animationFrame = requestAnimationFrame(draw);
+
+            main.update(animationFrame);
+        }
+        setTimeout(function(){
+            draw();
+        }, 3000)
+
+
+        var t0 = window.performance.now();
+        var int=0;
+        var mes = canvas.style.marginLeft;
+        let run = true;
+
+        if(run) {
+
+            int = setInterval(function () {
+                canvas.style.marginLeft = -(window.performance.now() - t0) / 15 + "px";
+                canvasbg.style.marginLeft = -(window.performance.now() - t0) / 15 + "px";
+                mes = parseInt(canvas.style.marginLeft.replace(/px/, ''),10);
+                mes *= -1;
+               // console.log("ll",mes);
+                if(mes > 7000) {
+                    run = false;
+                    clearInterval(int)
+                }
+            }, 15);
+        } else {
+            console.log('fire');
+            clearInterval(int)
+        }
+    }
+
+</script>
+</body>
+
+</html>
