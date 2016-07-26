@@ -6,7 +6,7 @@
  */
 
 class Polygon {
-    constructor(sides, radius, offsetX, offsetY) {
+    constructor(sides, radius, offsetX, offsetY, bullet) {
         if (sides < 3) return;
 
         this.coords = [];
@@ -25,6 +25,8 @@ class Polygon {
         this.radian   *= Math.floor(Math.random()*2) == 1 ? 1 : -1;
         this.height   = 800;
         this.width    = 10000;
+        this.bullet   = bullet;
+        this.shots = [];
     }
 
     update() {
@@ -129,16 +131,88 @@ class Polygon {
                 context.strokeStyle = "red";
                 context.stroke();
                 context.lineWidth = 1;
+                context.globalAlpha = 1;
             }
         }
     }
 
-    draw (CONTEXT) {
+    draw (CONTEXT, angle) {
         CONTEXT.fillStyle = this.colour;
         CONTEXT.beginPath();
         CONTEXT.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2, true);
         CONTEXT.fill();
         CONTEXT.closePath();
+
+        this.rotation = angle; //(angle * (180 / Math.PI))
+
+        this.addShot(ship);
+        this.updateMissileXY(CONTEXT);
+        this.renderMissiles(CONTEXT);
+    }
+
+    updateMissileXY() {
+        let missile = {}, missileLength = this.shots.length - 1;
+
+        for (let i = missileLength; i >= 0; i--) {
+            missile = this.shots[i];
+
+
+            // tally up including vx + vy to account for ship speed.
+            missile.position.x -= (missile.velocity.x);
+            missile.position.y -= (missile.velocity.y);
+
+
+            missile.lifeCtr++;
+
+            if (missile.lifeCtr > missile.life) {
+                this.shots.splice(i, 1);
+                missile = null;
+            }
+        }
+    }
+
+    renderMissiles(CONTEXT) {
+
+        let missile = {};
+
+        let missileLength = this.shots.length - 1;
+
+        for (let i = missileLength; i >= 0; i--) {
+            missile = this.shots[i];
+
+            if (missile.hasOwnProperty("position") || missile1.hasOwnProperty("position")) {
+
+                CONTEXT.save();
+                CONTEXT.drawImage(this.bullet,missile.position.x, missile.position.y);
+                CONTEXT.restore();
+
+                // this.missileContact(1,missile);
+                // this.renderParticles();
+            }
+        }
+    }
+
+    /**
+     * New player missile
+     */
+    missile() {
+
+        let self = this;
+
+        return {
+            position: new Vector2D(self.position.x, self.position.y-10),
+            velocity: new Vector2D(7 * Math.cos(self.rotation), 7 * Math.sin(self.rotation)),
+            life: 500,
+            lifeCtr: 0,
+            width: 2,
+            height: 2
+        };
+    }
+
+    addShot (ship) {
+        if (this.shots.length < 50) {
+            this.shots.push(this.missile());
+        }
     }
 }
 

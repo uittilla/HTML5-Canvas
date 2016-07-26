@@ -5,7 +5,7 @@
  *
  */
 class Player {
-    constructor(sides, radius, offsetX, offsetY) {
+    constructor(sides, radius, offsetX, offsetY, craft) {
         if (sides < 3) return;
         this.coords = [];
         this.color = 'grey';
@@ -16,22 +16,24 @@ class Player {
         this.rotation = 0;
         this.thruster = false;
         this.shots = [];
+        this.shotpower = 2;
         this.particles = [];
         this.sheild = false;
         this.score = 0;
         this.round = 1;
         this.lives = 3;
-        this.height = 800;
+        this.height = 1000;
         this.width = 10000;
         this.radius = radius;
         this.sides = 40;
         this.position = new Vector2D(offsetX, offsetY);
-
+        this.craft = craft;
+        this.life = 100;
         this.setCoords();
         this.center = this.getCenter();
 
         this.radian = -6.283185;
-        this.rotate();
+       // this.rotate();
     }
 
     update() {
@@ -50,7 +52,7 @@ class Player {
 
         this.radian = this.rotation;
 
-        this.rotate();
+       // this.rotate();
 
         this.velocity.x += Math.cos(this.rotation) * this._thrust;
         this.velocity.y += Math.sin(this.rotation) * this._thrust;
@@ -64,6 +66,7 @@ class Player {
         });
 
         this.updateMissileXY();
+
     }
 
     updateMissileXY() {
@@ -180,6 +183,13 @@ class Player {
 
         let diff = 0;
 
+        let mes = parseInt(canvas.style.marginLeft.replace(/px/, ''),10);
+        mes *= -1;
+        
+        if(this.position.x < mes) {
+            this.position.x += mes + 10;
+        }
+
         if (this.position.x > right) {
             this.position.x = left;
         }
@@ -250,7 +260,7 @@ class Player {
                 context.lineTo(P.x + (danger * N.x), P.y + (danger * N.y));
                 context.strokeStyle = "blue";
                 context.lineWidth = 1;
-                context.globalAlpha = 0.5;
+                //context.globalAlpha = 0.5;
                 context.stroke();
                 context.beginPath();
                 context.arc(P.x, P.y, 4, 0, Math.PI * 2, true);
@@ -262,4 +272,154 @@ class Player {
 
         }
     }
+
+    draw(CONTEXT, enemies) {
+        var coords = this.getCoords();
+        var cLength = coords.length;
+        var exhaust = ['red', 'orange', 'yellow', 'purple', 'green'];
+        var flame = [30, 31, 32, 33, 34, 35];
+
+        CONTEXT.save();
+
+        if(this.sheild) {
+            CONTEXT.beginPath();
+            CONTEXT.moveTo(coords[0].x, coords[0].y);
+           // CONTEXT.rotate(this.rotation);
+
+            CONTEXT.fillStyle = "yellow";
+            CONTEXT.globalAlpha = 0.5;
+            while (cLength--) {
+                CONTEXT.lineTo(coords[cLength].x, coords[cLength].y);
+            }
+            //context.fill();
+            CONTEXT.stroke();
+        }
+
+        //if(ship.sheild) {
+        CONTEXT.beginPath();
+        CONTEXT.moveTo(coords[0].x, coords[0].y);
+        CONTEXT.lineWidth = 1;
+        CONTEXT.translate(this.position.x, this.position.y);
+        CONTEXT.rotate(this.rotation);
+
+
+        CONTEXT.globalAlpha = 1;
+        CONTEXT.beginPath();
+        CONTEXT.drawImage(this.craft, -20, -23);
+        CONTEXT.closePath();
+
+        if (this.thruster) {
+            CONTEXT.beginPath();
+            CONTEXT.moveTo(-17.5, -2.5);
+            CONTEXT.lineTo(-flame[Math.floor(flame.length * Math.random())], 0);
+            CONTEXT.lineTo(-17.5, 2);
+            CONTEXT.fillStyle = exhaust[Math.floor(exhaust.length * Math.random())];
+            CONTEXT.fill();
+            CONTEXT.stroke();
+            CONTEXT.closePath();
+        }
+
+        CONTEXT.restore();
+
+        this.renderMissiles(CONTEXT);
+    }
+
+    renderMissiles() {
+        var missile = {};
+        var player = {};
+        var missile = {};
+
+        var missileLength = this.shots.length - 1;
+
+        for (var i = missileLength; i >= 0; i--) {
+            missile = this.shots[i];
+            if (missile.hasOwnProperty("position")) {
+
+                CONTEXT.save();
+                CONTEXT.setTransform(1, 0, 0, 1, 0, 0);
+                CONTEXT.translate(missile.position.x, missile.position.y);
+
+                CONTEXT.strokeStyle = 'red';
+                CONTEXT.globalAlpha = 1;
+
+                CONTEXT.beginPath();
+                CONTEXT.moveTo(-1, -1);
+                CONTEXT.lineTo(1, -1);
+                CONTEXT.lineTo(1, 1);
+                CONTEXT.lineTo(-1, 1);
+                CONTEXT.lineTo(-1, -1);
+                CONTEXT.stroke();
+                CONTEXT.closePath();
+
+                CONTEXT.restore();
+            }
+        }
+    }
+
+    /**
+     * Player missile to bad guy contact
+     */
+    missileContact (enemy) {
+
+        for (let i in this.shots) {
+            let missile = this.shots[i];
+            //console.log(missile);
+            let baddy    = enemy, particle,
+                dist     = baddy.position.distance(missile),
+                min_dist = baddy.radius;
+
+            if (dist < min_dist) {
+                missile=null;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    createExplosion(x, y, color) {
+        var minSize = 10;
+        var maxSize = 30;
+        var count = 20;
+        var minSpeed = 60.0;
+        var maxSpeed = 200.0;
+        var minScaleSpeed = 1.0;
+        var maxScaleSpeed = 4.0;
+
+        for (var angle = 0; angle < 360; angle += Math.round(360 / count)) {
+            var particle = new Particle();
+
+            particle.x = x;
+            particle.y = y;
+
+            particle.radius = this.randomFloat(minSize, maxSize);
+
+            particle.color = color;
+
+            particle.scaleSpeed = this.randomFloat(minScaleSpeed, maxScaleSpeed);
+
+            var speed = this.randomFloat(minSpeed, maxSpeed);
+
+            particle.velocityX = speed * Math.cos(angle * Math.PI / 180.0);
+            particle.velocityY = speed * Math.sin(angle * Math.PI / 180.0);
+
+            this.particles.push(particle);
+        }
+    }
+
+    updateParticles(CONTEXT) {
+        // update and draw particles
+        for (var i=0; i<this.particles.length; i++)
+        {
+            var particle = this.particles[i];
+
+            particle.update(60.0);
+            particle.draw(CONTEXT);
+        }
+    }
+
+    randomFloat (min, max) {
+        return min + Math.random()*(max-min);
+    }
+
 }
