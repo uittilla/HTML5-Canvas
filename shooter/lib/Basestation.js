@@ -67,6 +67,8 @@ class Basestation {
             coords.x -= 0.1;
         });
 */
+
+        //console.log(angle);
         this.rotation = angle;
         this.addShot(angle);
         this.updateMissileXY(CONTEXT, angle);
@@ -203,24 +205,24 @@ class Basestation {
     missile(angle) {
         let self = this;
         let Per_Frame_Distance = 7;
-        let sin = Math.sin(-angle) * Per_Frame_Distance;
-        let cos = Math.cos(-angle) * Per_Frame_Distance;
+        let sin = Math.sin(angle) * Per_Frame_Distance;
+        let cos = Math.cos(angle) * Per_Frame_Distance;
 
         this.fire = false;
 
         return {
             position: new Vector2D(self.position.x, self.position.y),
-            velocity: new Vector2D(-cos, -sin),
-            life: (parseInt(self.dist)/10) + 25,
+            velocity: new Vector2D(7 * Math.cos(self.rotation), 7 * Math.sin(self.rotation)), // new Vector2D(cos, sin),
+            life: (parseInt(self.dist)/10) + 85,
             lifeCtr: 0
         };
 
     }
 
     addShot (angle) {
-        console.log(this.dist, (parseInt(this.dist)/10));
+        //console.log(this.dist, (parseInt(this.dist)/10));
         let i=0;
-        if (this.fire && this.shots.length < 10 && this.dist < 2000) {
+        if (this.fire && this.shots.length < 20 && this.dist < 2000) {
             this.shots.push(this.missile(angle));
         } else {
             this.fire = true;

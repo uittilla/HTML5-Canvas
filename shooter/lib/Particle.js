@@ -3,12 +3,10 @@
 class Particle {
     constructor() {
         this.scale = 1.0;
-        this.x = 0;
-        this.y = 0;
+        this.position = new Vector2D(0,0);
         this.radius = 20;
         this.color = "#000";
-        this.velocityX = 0;
-        this.velocityY = 0;
+        this.velocity = new Vector2D(0,0);
         this.scaleSpeed = 0.5;
     }
 
@@ -21,15 +19,15 @@ class Particle {
             this.scale = 0;
         }
         // moving away from explosion center
-        this.x += this.velocityX * ms/1000.0;
-        this.y += this.velocityY * ms/1000.0;
+        this.position.x += this.velocity.x * ms/1000.0;
+        this.position.y += this.velocity.y * ms/1000.0;
     };
 
     draw (CONTEXT)
     {
         // translating the 2D context to the particle coordinates
         CONTEXT.save();
-        CONTEXT.translate(this.x, this.y);
+        CONTEXT.translate(this.position.x, this.position.y);
         CONTEXT.scale(this.scale, this.scale);
 
         // drawing a filled circle in the particle's local space

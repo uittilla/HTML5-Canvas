@@ -37,6 +37,9 @@ class Player {
     }
 
     update() {
+
+
+
         this.center = this.getCenter();
         this.boundsCheck();
 
@@ -274,24 +277,40 @@ class Player {
     }
 
     draw(CONTEXT, enemies) {
-        var coords = this.getCoords();
-        var cLength = coords.length;
-        var exhaust = ['red', 'orange', 'yellow', 'purple', 'green'];
-        var flame = [30, 31, 32, 33, 34, 35];
+        let coords = this.getCoords();
+        let cLength = coords.length;
+        let exhaust = ['red', 'orange', 'yellow', 'purple', 'green'];
+        let sheild  = ['white', 'lightgrey'];
+        let flame = [30, 31, 32, 33, 34, 35];
 
         CONTEXT.save();
+
+        console.log("player lives", this.lives);
+        if(this.lives <= 0) {
+
+            CONTEXT.font = "50px sans-serif";
+            CONTEXT.strokeStyle = "red";
+            CONTEXT.strokeText("Game Over", this.position.x, this.position.y);
+            CONTEXT.stroke();
+            // window.cancelRequestAnimationFrame(animationFrame);
+            setTimeout(function () {
+            // window.cancelRequestAnimationFrame(animationFrame);
+             window.location = location.href;
+             }, 5000);
+        }
 
         if(this.sheild) {
             CONTEXT.beginPath();
             CONTEXT.moveTo(coords[0].x, coords[0].y);
            // CONTEXT.rotate(this.rotation);
 
-            CONTEXT.fillStyle = "yellow";
+            CONTEXT.fillStyle = sheild[Math.floor(sheild.length * Math.random())];
             CONTEXT.globalAlpha = 0.5;
             while (cLength--) {
                 CONTEXT.lineTo(coords[cLength].x, coords[cLength].y);
             }
-            //context.fill();
+            CONTEXT.fill();
+            CONTEXT.globalAlpha = 1;
             CONTEXT.stroke();
         }
 
@@ -359,22 +378,20 @@ class Player {
     /**
      * Player missile to bad guy contact
      */
-    missileContact (enemy) {
+    missileContact (obj1, enemy, colours, index) {
 
         for (let i in this.shots) {
             let missile = this.shots[i];
-            //console.log(missile);
             let baddy    = enemy, particle,
                 dist     = baddy.position.distance(missile),
                 min_dist = baddy.radius;
 
             if (dist < min_dist) {
-                missile=null;
-                return true;
+                this.shots.splice(i,1);
+                enemy.hit(obj1, this.shotpower, colours, index);
             }
         }
 
-        return false;
     }
 
     createExplosion(x, y, color) {
@@ -389,8 +406,8 @@ class Player {
         for (var angle = 0; angle < 360; angle += Math.round(360 / count)) {
             var particle = new Particle();
 
-            particle.x = x;
-            particle.y = y;
+            particle.position.x = x;
+            particle.position.y = y;
 
             particle.radius = this.randomFloat(minSize, maxSize);
 
@@ -400,8 +417,8 @@ class Player {
 
             var speed = this.randomFloat(minSpeed, maxSpeed);
 
-            particle.velocityX = speed * Math.cos(angle * Math.PI / 180.0);
-            particle.velocityY = speed * Math.sin(angle * Math.PI / 180.0);
+            particle.velocity.x = speed * Math.cos(angle * Math.PI / 180.0);
+            particle.velocity.y = speed * Math.sin(angle * Math.PI / 180.0);
 
             this.particles.push(particle);
         }
@@ -422,4 +439,36 @@ class Player {
         return min + Math.random()*(max-min);
     }
 
+    hit(shotpower) {
+        let colours = ['red', 'orange', 'yellow', 'purple', 'green'];
+       // console.log("ship hit", this.life, shotpower);
+
+        if (this.life > 0 && this.life <= 10) {
+
+            this.createExplosion(this.position.x, this.position.y, colours[Math.floor(colours.length * Math.random())]);
+            this.updateParticles(CONTEXT);
+            this.life--;
+
+        } else if (this.life === 0) {
+
+         //   this.position = new Vector2D(10,10);
+
+            //setTimeout(function(){
+
+                let mes = parseInt(canvas.style.marginLeft.replace(/px/, ''),10);
+                mes *= -1;
+
+                this.position = new Vector2D(200, mes);
+                this.life = 100;
+           // }, 2000);
+
+
+            this.sheild = true;
+            this.lives--;
+            console.log("life taken");
+        } else {
+            this.life -= shotpower;
+           // console.log("ship hit", this.life, shotpower);
+        }
+    }
 }

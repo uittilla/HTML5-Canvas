@@ -1,7 +1,7 @@
 "use strict";
 
 class Enemyfighter {
-    constructor(width, height, id, src, bullet) {
+    constructor(width, height, id, src, bullet, shotpow, life, numshots) {
         let rad = 10;
         let colours = ['red', 'green', 'yellow', 'silver', 'orange', 'pink'];
 
@@ -18,12 +18,13 @@ class Enemyfighter {
         this.mass = 25;//Math.floor(Math.random() * 1) + 5;
         this.colour = colours[Math.floor(Math.random() * colours.length)];
         this.shots = [];
-        this.shotpower = 1;
+        this.shotpower = shotpow;
         this.id = id;
         this.src = src;
         this.rotation = 90;
         this.bullet = bullet;
-        this.life = 20;
+        this.life = life;
+        this.numshots = numshots;
         this.particles = [];
     }
 
@@ -57,6 +58,8 @@ class Enemyfighter {
 
         this.addShot(ship);
         this.updateMissileXY(CONTEXT, angle);
+        this.updateParticles(CONTEXT, ship);
+        this.particleContact(ship);
     }
 
     boundsCheck(obj) {
@@ -99,6 +102,11 @@ class Enemyfighter {
             missile.lifeCtr++;
 
             if (missile.lifeCtr > missile.life) {
+
+                if(this.shotpower >= 5) {
+           //         console.log(this.shotpower)
+                    this.createExplosion(missile.position.x, missile.position.y, 'red');
+                }
                 this.shots.splice(i, 1);
                 missile = null;
             }
@@ -110,20 +118,15 @@ class Enemyfighter {
     renderMissiles(CONTEXT) {
 
         let missile = {};
-
         let missileLength = this.shots.length - 1;
 
         for (let i = missileLength; i >= 0; i--) {
             missile = this.shots[i];
 
             if (missile.hasOwnProperty("position") || missile1.hasOwnProperty("position")) {
-
                 CONTEXT.save();
                 CONTEXT.drawImage(this.bullet,missile.position.x, missile.position.y);
                 CONTEXT.restore();
-
-               // this.missileContact(1,missile);
-               // this.renderParticles();
             }
         }
     }
@@ -146,8 +149,8 @@ class Enemyfighter {
         };
     }
 
-    addShot (ship) {
-        if (this.shots.length < 15) {
+    addShot () {
+        if (this.shots.length < this.numshots) {
             this.shots.push(this.missile());
         }
     }
@@ -280,22 +283,36 @@ class Enemyfighter {
 
 
     missileContact (player) {
+        let i=0;
+        for (i in this.shots) {
+            if (!player.sheild) {
+                let missile = this.shots[i];
+                //console.log(missile);
+                let dist     = player.position.distance(missile),
+                    min_dist = player.radius;
 
-        for (let i in this.shots) {
-            let missile = this.shots[i];
-            //console.log(missile);
-            let baddy    = player, particle,
-                dist     = baddy.position.distance(missile),
-                min_dist = baddy.radius;
-
-            if (dist < min_dist) {
-                missile=null;
-                this.shots.splice(i,1);
-                return true;
+                if (dist < min_dist) {
+                    this.shots.splice(i, 1);
+                    player.hit(this.shotpower);
+                }
             }
         }
+    }
 
-        return false;
+    particleContact(player) {
+        let i=0;
+        for (i in this.particles) {
+            if (!player.sheild) {
+                let missile = this.particles[i];
+
+                let dist     = player.position.distance(missile),
+                    min_dist = 10; //player.radius;
+
+                if (dist < min_dist) {
+                    player.hit(1);
+                }
+            }
+        }
     }
 
 
@@ -311,8 +328,8 @@ class Enemyfighter {
         for (var angle = 0; angle < 360; angle += Math.round(360 / count)) {
             var particle = new Particle();
 
-            particle.x = x;
-            particle.y = y;
+            particle.position.x = x;
+            particle.position.y = y;
 
             particle.radius = this.randomFloat(minSize, maxSize);
 
@@ -322,18 +339,17 @@ class Enemyfighter {
 
             var speed = this.randomFloat(minSpeed, maxSpeed);
 
-            particle.velocityX = speed * Math.cos(angle * Math.PI / 180.0);
-            particle.velocityY = speed * Math.sin(angle * Math.PI / 180.0);
+            particle.velocity.x = speed * Math.cos(angle * Math.PI / 180.0);
+            particle.velocity.y = speed * Math.sin(angle * Math.PI / 180.0);
 
             this.particles.push(particle);
         }
     }
 
     updateParticles(CONTEXT) {
-        // update and draw particles
-        for (var i=0; i<this.particles.length; i++)
-        {
-            var particle = this.particles[i];
+        let i = 0, particle={};
+        for (i; i<this.particles.length; i++) {
+            particle = this.particles[i];
 
             particle.update(60.0);
             particle.draw(CONTEXT);
@@ -343,5 +359,19 @@ class Enemyfighter {
     randomFloat (min, max) {
         return min + Math.random()*(max-min);
     }
+
+    hit(obj1, shotpower, colours, i) {
+        console.log("enemy hit", shotpower);
+        if(this.life > 0 && this.life <= 10) {
+            this.createExplosion(this.position.x, this.position.y, colours[Math.floor(colours.length * Math.random())]);
+            this.updateParticles(CONTEXT);
+            this.life -= shotpower;
+        } else if(this.life === 0) {
+            obj1.splice(i, 1);
+        } else {
+            this.life -= shotpower;
+        }
+    }
+
 
 }
