@@ -308,15 +308,16 @@ class Enemybomber {
      * Player missile to bad guy contact
      */
     missileContact (player) {
-
-        for (let i in this.shots) {
-            let missile = this.shots[i];
+        let i, baddy, dist, min_dist, missile;
+        for (i in this.shots) {
+            missile = this.shots[i];
             //console.log(missile);
-            let baddy    = player, particle,
-                dist     = baddy.position.distance(missile),
-                min_dist = baddy.radius;
+            baddy    = player;
+            dist     = baddy.position.distance(missile);
+            min_dist = baddy.radius;
 
             if (dist < min_dist) {
+               // console.log(dist, min_dist);
                 missile=null;
                 this.shots.splice(i,1);
                 return true;

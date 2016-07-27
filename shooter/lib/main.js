@@ -9,6 +9,8 @@ class Main {
         this.objects = [];
         this.mouse = {};
         this.objects = [];
+        this.bombers = [];
+        this.fighters = [];
         this.polygons = [];
         this.enemies = [];
         this.ship = null;
@@ -38,7 +40,7 @@ class Main {
         },5000);
 
         this.ship          = new Player(8, 25, 200, 300, this.craft);
-        this.space_station = new Basestation(25, 220, 9000, 300, this.station, this.stationbullet);
+        this.space_station = new Basestation(25, 220, 8500, 300, this.station, this.stationbullet);
     }
 
     doKeyboard() {
@@ -53,119 +55,87 @@ class Main {
 
     addBombers () {
         let img = [];
-        for (let i=0; i < 12; i++) {
+        for (let i=0; i < 10; i++) {
             img[i] = {};
             img[i].obj = new Image();
             img[i].obj.src = 'images/bomber.png';
-            this.enemies.push(new Enemybomber(CANVAS.width, CANVAS.height, i, img[i], this.bombbullet));
+            this.bombers.push(new Enemyfighter(CANVAS.width, CANVAS.height, i, img[i], this.bombbullet, 5, 50, 1));
         }
     }
 
     addFighters () {
         let img = [];
-        for (let i=0; i < 16; i++) {
+        for (let i=0; i < 20; i++) {
             img[i] = {};
             img[i].obj = new Image();
             img[i].obj.src = 'images/speedship.png'
-            this.enemies.push(new Enemyfighter(CANVAS.width, CANVAS.height, i, img[i], this.bullet));
+            this.fighters.push(new Enemyfighter(CANVAS.width, CANVAS.height, i, img[i], this.bullet, 1, 20, 5));
         }
     }
 
     update(animationFrame){
 
-        if(this.ship.lives ===0) {
-            CONTEXT.font = "50px sans-serif";
-            CONTEXT.strokeStyle = "red";
-            CONTEXT.strokeText("Game Over", this.ship.position.x + 250, this.ship.position.y - 100);
-            CONTEXT.stroke();
-
-            setTimeout(function () {
-                window.cancelRequestAnimationFrame(animationFrame);
-                window.location = location.href;
-            }, 5000);
-        }
-
         CONTEXT.clearRect(0, 0, CANVAS.width, CANVAS.height);
-        let self = this;
+
+        let self = this, angle;
         let colours = ['red', 'orange', 'yellow', 'purple', 'green'];
-        let angle = 0;
+
+        CONTEXT.save();
+        this.doEnemy(this.fighters, this.bombers, colours);
+        this.doEnemy(this.bombers, this.fighters, colours);
+
+        this.space_station.missileContact(this.ship);
+
         this.space_station.checkObjCollision(this.ship, CONTEXT);
         this.ship.checkObjCollision(this.space_station, CONTEXT);
 
-        let objLength = this.enemies.length;
-        for (let i = 0; i < objLength; i++) {
-            let obj = this.enemies[i];
-
-            for (let j = i + 1; j < objLength; j++) {
-                if (obj.checkCollision(this.enemies[j])) {
-                    obj.resolveCollision(obj, this.enemies[j]);
-                }
-            }
-
-            // direct baddies to ship
-            angle = Math.atan2(obj.position.y - this.ship.position.y, obj.position.x - this.ship.position.x );
-
-            obj.boundsCheck(obj);
-            obj.moveVector = obj.velocity.scalarMultiplyNew(0.9);
-            obj.move(angle);
-            obj.draw(CONTEXT, angle, this.ship);
-
-            this.space_station.checkObjCollision(obj, CONTEXT);
-            this.ship.checkObjCollision(obj, CONTEXT);
-
-            this.space_station.missileContact(this.ship);
-            obj.missileContact(this.ship);
-
-            if( this.ship.missileContact(obj) ) {
-                if(obj.life > 0 && obj.life <= 10) {
-                    obj.createExplosion(obj.position.x, obj.position.y, colours[Math.floor(colours.length * Math.random())]);
-                    obj.updateParticles(CONTEXT);
-                    obj.life -= this.ship.shotpower;
-                } else if(obj.life === 0) {
-                    self.enemies.splice(i, 1);
-                } else {
-                    obj.life -= this.ship.shotpower;
-                }
-            }
-
-            if(obj.missileContact(this.ship) ) {
-                if(this.ship.sheild === false) {
-                    if (this.ship.life > 0 && this.ship.life <= 10) {
-                        console.log(this.ship.life);
-                        this.ship.createExplosion(this.ship.position.x, this.ship.position.y, colours[Math.floor(colours.length * Math.random())]);
-                        this.ship.updateParticles(CONTEXT);
-                        this.ship.life--;
-                    } else if (this.ship.life === 0) {
-                        this.ship.position = new Vector2D(10,10);
-
-                        setTimeout(function(){
-
-                            let mes = parseInt(canvas.style.marginLeft.replace(/px/, ''),10);
-                            mes *= -1;
-
-                            self.ship.position = new Vector2D(mes, 200);
-                            self.ship.life = 100;
-                        }, 2000);
-
-                        this.ship.lives--;
-                    } else {
-                        this.ship.life -= obj.shotpower;
-                    }
-
-                    console.log(this.ship.life);
-                }
-            }
-        }
-
-        CONTEXT.save();
-
-        this.ship.update(this.enemies);
+        this.ship.update();
         this.ship.draw(CONTEXT);
 
+        angle = Math.atan2(this.space_station.position.y - this.ship.position.y, this.space_station.position.x - this.ship.position.x );
         this.space_station.update(angle, this.ship);
         this.space_station.draw(CONTEXT, angle);
 
         CONTEXT.restore();
     }
 
+    doEnemy(obj1, obj2, colours) {
+        let i = 0, j = 0, obj, angle;
+
+        for (i; i < obj1.length; i++) {
+            obj = obj1[i];
+
+            for (j = i + 1; j < obj2.length; j++) {
+                if (obj.checkCollision(obj2[j])) {
+                    obj.resolveCollision(obj, obj2[j]);
+                }
+            }
+
+            this.ship.checkObjCollision(obj, CONTEXT);
+
+            // direct baddies to ship
+            angle = Math.atan2(obj.position.y - this.ship.position.y, obj.position.x - this.ship.position.x );
+
+            this.updateEnemy(obj, angle);
+            this.shipMissileContact(obj1, obj, colours, i);
+            this.enemyMissileContact(obj, colours, i);
+
+        }
+    }
+
+    updateEnemy(obj, angle) {
+        obj.boundsCheck(obj);
+        obj.moveVector = obj.velocity.scalarMultiplyNew(0.9);
+        obj.move(angle);
+        obj.draw(CONTEXT, angle, this.ship);
+        obj.missileContact(this.ship);
+    }
+
+    shipMissileContact(obj1, obj, colours, i) {
+        this.ship.missileContact(obj1, obj, colours, i);
+    }
+    
+    enemyMissileContact(obj, colours, i) {
+        obj.missileContact(this.ship);
+    }
 }
