@@ -213,7 +213,7 @@ class Basestation {
         return {
             position: new Vector2D(self.position.x, self.position.y),
             velocity: new Vector2D(7 * Math.cos(self.rotation), 7 * Math.sin(self.rotation)), // new Vector2D(cos, sin),
-            life: (parseInt(self.dist)/10) + 85,
+            life: (parseInt(self.dist)/10),
             lifeCtr: 0
         };
 
@@ -288,8 +288,8 @@ class Basestation {
         for (var angle = 0; angle < 360; angle += Math.round(360 / count)) {
             var particle = new Particle();
 
-            particle.x = x;
-            particle.y = y;
+            particle.position.x = x;
+            particle.position.y = y;
 
             particle.radius = this.randomFloat(minSize, maxSize);
 
@@ -299,8 +299,8 @@ class Basestation {
 
             var speed = this.randomFloat(minSpeed, maxSpeed);
 
-            particle.velocityX = speed * Math.cos(angle * Math.PI / 180.0);
-            particle.velocityY = speed * Math.sin(angle * Math.PI / 180.0);
+            particle.velocity.x = speed * Math.cos(angle * Math.PI / 180.0);
+            particle.velocity.y = speed * Math.sin(angle * Math.PI / 180.0);
 
             this.particles.push(particle);
         }
@@ -308,8 +308,7 @@ class Basestation {
 
     updateParticles(CONTEXT) {
         // update and draw particles
-        for (var i=0; i<this.particles.length; i++)
-        {
+        for (var i=0; i<this.particles.length; i++) {
             var particle = this.particles[i];
 
             particle.update(60.0);
