@@ -13,7 +13,8 @@
     playerCraft.src = "images/fighter.png";
 
 // Component types
-    const loc = component("vector");
+    const drawable = component("visible");
+    const position = component("vector");
     const move = component("vector");
     const impulse = component(function(forward,rotate) {
         this.forward = forward; this.rotate = rotate;
@@ -23,29 +24,44 @@
     });
     const rotate = component("angle");
 
+    const draw = (e, loc) => {
+        render.save();
+        render.beginPath();
+        render.translate( loc.vector.x, loc.vector.y );
+        if(e.has(rotate)) {
+            render.rotate(e.get(rotate).angle * Math.PI / 180);
+        }
+        if(e.has(image)) {
+            const i = e.get(image);
+            render.drawImage(i.image, i.offset.x , i.offset.y);
+        }
+        if(e.has(impulse)) {
+            const i = e.get(impulse);
+            if(i.forward!=0) {
+                render.moveTo(-17.5,-2.5)
+                render.lineTo(-30,0)
+                render.lineTo(-17.5,2)
+                render.fillStyle = "red";
+                render.fill();
+                render.stroke();
+            }
+        }
+        render.closePath();
+        render.restore();
+    }
+
 // Systems
     system({ //render
-        components: [image, loc],
+        components: [position,drawable],
         pre() {
-            render.save();
             render.clearRect(0, 0, canvas.width, canvas.height);
         },
-        every(image, loc, entity) {
-            render.beginPath();
-            if(entity.has(rotate)) {
-                render.translate( loc.vector.x, loc.vector.y );
-                render.rotate(entity.get(rotate).angle * Math.PI / 180);
-                render.translate( -loc.vector.x, -loc.vector.y );
-            }
-            render.drawImage(image.image, loc.vector.x + image.offset.x , loc.vector.y + image.offset.y);
-            render.closePath();
-        },
-        post() {
-            render.restore();
+        every(loc, d, e) {
+            draw(e, loc);
         },
     });
     system({ // movement
-        components: [move, loc],
+        components: [move, position],
         every(move, loc, entity) {
             loc.vector.add(move.vector);
         },
@@ -95,10 +111,11 @@
 
 // Add player
     const player = entity()
-        .add(loc, new Vector2D(100, 100))
+        .add(position, new Vector2D(100, 100))
         .add(image, playerCraft, new Vector2D(-20, -23))
         .add(move, new Vector2D(0, 0))
-        .add(rotate, 0);
+        .add(rotate, 0)
+        .add(drawable,true);
 
 // GO!
     const gameLoop = () => {
