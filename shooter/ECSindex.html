@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Title of the document</title>
+    <style type="text/css">
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #canvasbg {
+            background:url(images/bg1.png);
+            background-repeat: repeat;
+        }
+
+        .wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .wrapper canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+
+<body>
+<div class="wrapper" height="100%" width="100%">
+    <canvas id="canvasbg" width="10000" height="1000"></canvas>
+    <canvas id="canvas" width="10000" height="1000"> </canvas>
+</div>
+<script type="text/javascript" src="lib/Vector2D.js"></script>
+<script type="text/javascript" src="lib/kran.js"></script>
+<script type="text/javascript" src="lib/ecs.js"></script>
+</body>
+
+</html>
