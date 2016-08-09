@@ -48,8 +48,8 @@ class Vector2D {
      * Gets the radian angle between this and vector
      */
     getAngle (vector) {
-        let dx = (vector.position.x) - (this.x),
-            dy = (vector.position.y) - (this.y);
+        let dx = (vector.x) - (this.x),
+            dy = (vector.y) - (this.y);
 
         return Math.atan2(dy, dx);
     }

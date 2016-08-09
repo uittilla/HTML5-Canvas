@@ -48,7 +48,7 @@
     this.removal = []
   }
 
-  EntityCollection.prototype.callWithComps = function(ent, func, context, ev) {
+  EntityCollection.prototype.callWithComps = function(ent, func, context, ev, step) {
     var offset = 0
     if (ev) this.buffer[offset++] = ev
     for (var i = 0; i < this.comps.length; i++) {
@@ -57,13 +57,14 @@
         this.buffer[offset++] = ent.comps[this.comps[i]]
       }
     }
-    this.buffer[offset] = ent
+    this.buffer[offset++] = ent
+    this.buffer[offset++] = step
     func.apply(context, this.buffer)
   }
 
-  EntityCollection.prototype.forEachWithComps = function(every, context, ev) {
+  EntityCollection.prototype.forEachWithComps = function(every, context, ev, step) {
     this.ents.forEach(function (ent) { // Call every
-      this.callWithComps(ent, every, context, ev)
+      this.callWithComps(ent, every, context, ev, step)
     }, this)
   }
 
@@ -138,17 +139,18 @@
         this.collection.ents.length === 0) {
       return
     }
-    var addev = true
+    var timestep = undefined;
     if (ev) {
       if (ev instanceof CustomEvent) {
         ev = ev.detail
       } else {
-        addev = false
+        timestep = ev;
+        ev = undefined;
       }
     }
     if (isFunc(this.pre)) this.pre(ev)
     if (isFunc(this.every)) {
-      this.collection.forEachWithComps(this.every, this, addev?ev:undefined)
+      this.collection.forEachWithComps(this.every, this, ev, timestep)
     }
     if (isFunc(this.post)) this.post(ev)
   }
