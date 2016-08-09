@@ -45,6 +45,7 @@
     this.buffer = new Array(comps.length + 2)
     this.ents = new LinkedList()
     this.arrival = []
+    this.removal = []
   }
 
   EntityCollection.prototype.callWithComps = function(ent, func, context, ev) {
@@ -89,9 +90,15 @@
     this.members = []
   }
 
-  SystemGroup.prototype.run = function() {
+  SystemGroup.prototype.run = function(time) {
+    var step
+    if( !this.last ) {
+        this.last = time
+    }
+    step = time - this.last
+    this.last = time
     this.members.forEach(function (member) {
-      member.run()
+      member.run(step)
     })
   }
 
@@ -102,6 +109,7 @@
     if (props.components !== undefined) {
       props.collection = this.getEntityCollection(props.components)
       if (isFunc(props.arrival)) props.collection.arrival.push(props.arrival)
+      if (isFunc(props.removal)) props.collection.removal.push(props.removal)
     }
     if (props.on) {
       props.on = wrapInArray(props.on)
@@ -121,10 +129,8 @@
     this.systems.push(props)
   }
 
-  Kran.prototype.run = function(group) {
-    this.systemGroups[group].members.forEach(function (member) {
-      member.run()
-    })
+  Kran.prototype.run = function(group, time) {
+    this.systemGroups[group].run(time)
   }
 
   var runSystem = function(ev) {
@@ -132,12 +138,17 @@
         this.collection.ents.length === 0) {
       return
     }
-    if (ev && ev instanceof CustomEvent) {
-      ev = ev.detail
+    var addev = true
+    if (ev) {
+      if (ev instanceof CustomEvent) {
+        ev = ev.detail
+      } else {
+        addev = false
+      }
     }
     if (isFunc(this.pre)) this.pre(ev)
     if (isFunc(this.every)) {
-      this.collection.forEachWithComps(this.every, this, ev)
+      this.collection.forEachWithComps(this.every, this, addev?ev:undefined)
     }
     if (isFunc(this.post)) this.post(ev)
   }
@@ -188,7 +199,7 @@
     this.comps[compId] = undefined
     this.belongsTo.forEach(function (collBelonging, elm) {
       if (!qualifiesForCollection(this, collBelonging.comps)) {
-        collBelonging.entry.remove()
+        removeEntityFromCollection(this, collBelonging)
         elm.remove()
       }
     }, this)
@@ -211,9 +222,10 @@
     return new Entity(this.components)
   }
 
-  var CollectionBelonging = function (comps, entry) {
+  var CollectionBelonging = function (comps, entry, coll) {
     this.comps = comps
     this.entry = entry
+    this.coll = coll
   }
 
   var addEntityToCollection = function(ent, coll) {
@@ -221,8 +233,16 @@
       coll.callWithComps(ent, func)
     })
     var collEntry = coll.ents.add(ent)
-    ent.belongsTo.add(new CollectionBelonging(coll.comps, collEntry))
+    ent.belongsTo.add(new CollectionBelonging(coll.comps, collEntry, coll))
   }
+
+  var removeEntityFromCollection = function(ent, collBelong) {
+    collBelong.coll.removal.forEach(function (func) {
+        collBelong.coll.callWithComps(ent, func)
+    })
+    collBelong.entry.remove()
+  }
+
 
   function getCompId(compId) {
     if (typeof compId === "number") { 
